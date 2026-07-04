@@ -188,16 +188,17 @@
     % 강의 제목
     \node[anchor=base west, inner sep=0pt] (aloha@bigtitle) at (12mm,\slideheight-46.5mm)
       {\aloha@bigtitlefont\color{aloha-ink}\inserttitle};
-    % 부제 + 하이라이트 바 (바 길이는 부제 길이에 맞춤; 텍스트보다 먼저 그림)
-    \setbox\z@=\hbox{\aloha@titlesubfont<\insertsubtitle>}%
-    \ifdim\wd\z@>1pt
-      \dimen@=\dimexpr 12mm+\wd\z@+3mm\relax
-      \edef\aloha@subbarend{\the\dimen@}%
-      \shade[left color=aloha-highlight!40!white, right color=aloha-highlight]
-        (10.5mm,\slideheight-56.3mm) rectangle (\aloha@subbarend,\slideheight-53.2mm);
+    % 부제 + 하이라이트 바 (바 길이는 부제 길이에 맞춤)
+    % 노드를 먼저 그려 크기를 얻고, 바를 덮은 뒤 텍스트를 다시 위에 그린다
+    \ifdefvoid{\insertsubtitle}{}{%
+      \node[anchor=base west, inner sep=0pt] (aloha@subt) at (12mm,\slideheight-55.5mm)
+        {\aloha@titlesubfont\color{aloha-ink}<\insertsubtitle>};
+      \shade[left color=aloha-highlight!55!white, right color=aloha-highlight]
+        ($(aloha@subt.south west)+(-1.5mm,-0.8mm)$)
+        rectangle ($(aloha@subt.base east)+(3mm,2.4mm)$);
       \node[anchor=base west, inner sep=0pt] at (12mm,\slideheight-55.5mm)
         {\aloha@titlesubfont\color{aloha-ink}<\insertsubtitle>};
-    \fi
+    }%
     % 우측 자동 목차
     \ifnum\value{aloha@nsec}>0
       \setcounter{aloha@tocpos}{0}%
