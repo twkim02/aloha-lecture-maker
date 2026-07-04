@@ -1,0 +1,32 @@
+%!TEX program = xelatex
+% ==========================================================================
+%  ALOHA 강의자료 공통 프리앰블
+%  - 반드시 XeLaTeX로 컴파일 (한글 폰트/kotex)
+%  - minted 사용으로 -shell-escape 필요 (latexmk가 .latexmkrc로 자동 설정)
+%  - 레포 루트에서 컴파일할 것 (fonts/, images/ 상대 경로)
+% ==========================================================================
+\documentclass[8pt, aspectratio=169, xcolor={table}]{beamer}
+% 8pt = PPT 16pt 본문에 해당 (PPT 13.33in → beamer 160mm 환산)
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{kotex}          % 한글 (xetexko)
+\usepackage{tabularx}
+\usepackage{multicol}
+\usepackage{import}
+
+% --- 코드 하이라이팅 (Pygments 기반) ---
+\usepackage{minted}
+\setminted{
+  style=vs,                 % 가독성 좋은 밝은 테마 (원하는 테마로 교체 가능)
+  fontsize=\small,
+  autogobble,
+  breaklines,
+  tabsize=4,
+  baselinestretch=1.1,
+}
+% 사용 예: \begin{minted}{cpp} ... \end{minted}
+
+\graphicspath{{./images/}}
+
+\usetheme{Aloha}

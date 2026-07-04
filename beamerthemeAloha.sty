@@ -1,0 +1,338 @@
+% ==========================================================================
+%  ALOHA Beamer Theme  (beamerthemeAloha.sty)
+%  2026 ALOHA (The algorithm club) 강의자료 테마
+%
+%  - 기존 PPT 강의자료(2026-1 중급반)의 디자인을 LaTeX로 재현한 테마입니다.
+%  - XeLaTeX + kotex(xetexko) 전용입니다.
+%  - 레포 루트에서 컴파일해야 합니다. (fonts/, images/ 상대 경로)
+%
+%  구조:
+%    1. 색상
+%    2. 폰트 (마루부리 굵기 매핑)
+%    3. 페이지 프레임(배경): 모서리 마크 / 헤더 / 푸터 / 로고 / 제목
+%    4. 타이틀 페이지 (+ 자동 목차)
+%    5. 리스트/기본 beamer 설정
+%    6. 커스텀 커맨드 (강의 작성용 컴포넌트)
+% ==========================================================================
+
+\RequirePackage{tikz}
+\usetikzlibrary{calc, backgrounds}
+\RequirePackage{etoolbox}
+\RequirePackage{fontspec}
+\RequirePackage{kotex}
+\defaultfontfeatures{Ligatures=TeX}
+
+\makeatletter
+
+% --------------------------------------------------------------------------
+% 1. 색상  (스펙: 강조 #5F2CC6, 배경 하이라이트 #ECE4F9)
+% --------------------------------------------------------------------------
+\definecolor{aloha-accent}{HTML}{5F2CC6}     % 강조색 (보라)
+\definecolor{aloha-highlight}{HTML}{ECE4F9}  % 하이라이트 배경 (연보라)
+\definecolor{aloha-ink}{HTML}{1A1A1A}        % 본문 텍스트
+\definecolor{aloha-gray}{HTML}{595959}       % 헤더/푸터/부연설명
+\definecolor{aloha-lightgray}{HTML}{A6A6A6}  % 페이지 번호
+
+% --------------------------------------------------------------------------
+% 2. 폰트
+%    스펙(PPT 기준) → 마루부리 공식 굵기 매핑
+%      아주가는(ExtraLight): 부제 12pt / 부연설명 11pt
+%      가는(Light)         : 본문 16pt (기본)
+%      중간(SemiBold)      : 제목 20pt / 볼드 / 개념 설명 22pt  → \textbf
+%    PPT(13.33in) → beamer(160mm) 크기 환산 비율 ≈ 0.47
+%      본문 16pt→약 7.6pt (documentclass 8pt), 제목 20pt→9.5pt, 개념 22pt→10.5pt
+% --------------------------------------------------------------------------
+\usefonttheme{professionalfonts}
+\usefonttheme{serif}
+
+\setmainfont{MaruBuri}[
+    Path = fonts/, Extension = .otf,
+    UprightFont = *-Light,
+    BoldFont = *-SemiBold,
+    ItalicFont = *-Light, ItalicFeatures = {FakeSlant=0.17},
+    BoldItalicFont = *-SemiBold, BoldItalicFeatures = {FakeSlant=0.17},
+]
+\setmainhangulfont{MaruBuri}[
+    Path = fonts/, Extension = .otf,
+    UprightFont = *-Light,
+    BoldFont = *-SemiBold,
+    ItalicFont = *-Light, ItalicFeatures = {FakeSlant=0.17},
+    BoldItalicFont = *-SemiBold, BoldItalicFeatures = {FakeSlant=0.17},
+]
+
+% 코드용 고정폭 폰트 (다른 폰트를 원하면 여기만 교체)
+\setmonofont{DMMono}[
+    Path = fonts/, Extension = .ttf,
+    UprightFont = *-Regular,
+    BoldFont = *-Medium,
+    ItalicFont = *-Italic,
+    BoldItalicFont = *-MediumItalic,
+    Scale = MatchLowercase,
+]
+% 코드 내 한글(주석)용
+\setmonohangulfont{NotoSansCJKkr}[
+    Path = fonts/, Extension = .otf,
+    UprightFont = *-Regular, BoldFont = *-Bold,
+    Scale = 0.85,
+]
+
+% 마루부리 추가 굵기 셀렉터 (라틴+한글 동시 전환)
+\newfontfamily\aloha@xlL{MaruBuri-ExtraLight.otf}[Path=fonts/]
+\newhangulfontfamily\aloha@xlH{MaruBuri-ExtraLight.otf}[Path=fonts/]
+\newcommand{\alohaextralight}{\aloha@xlL\aloha@xlH}   % 아주가는
+\newfontfamily\aloha@rgL{MaruBuri-Regular.otf}[Path=fonts/]
+\newhangulfontfamily\aloha@rgH{MaruBuri-Regular.otf}[Path=fonts/]
+\newcommand{\aloharegular}{\aloha@rgL\aloha@rgH}      % 보통
+\newfontfamily\aloha@bdL{MaruBuri-Bold.otf}[Path=fonts/]
+\newhangulfontfamily\aloha@bdH{MaruBuri-Bold.otf}[Path=fonts/]
+\newcommand{\alohabold}{\aloha@bdL\aloha@bdH}         % 굵은
+
+\linespread{1.15}
+
+% 용도별 폰트 (크기 조정은 여기서)
+\newcommand{\aloha@headerfont}{\alohaextralight\fontsize{5.5}{6.5}\selectfont}
+\newcommand{\aloha@pagenumfont}{\alohaextralight\fontsize{6.5}{7.5}\selectfont}
+\newcommand{\aloha@footerfont}{\alohaextralight\fontsize{5.5}{6.5}\selectfont}
+\newcommand{\aloha@frametitlefont}{\bfseries\fontsize{9.5}{11.5}\selectfont}
+\newcommand{\aloha@framesubfont}{\alohaextralight\fontsize{5.7}{7}\selectfont}
+\newcommand{\aloha@bigtitlefont}{\alohabold\fontsize{19}{23}\selectfont}
+\newcommand{\aloha@titlesubfont}{\fontsize{10.5}{13}\selectfont}
+\newcommand{\aloha@tagfont}{\bfseries\fontsize{9.5}{11.5}\selectfont}
+\newcommand{\aloha@tocfont}{\fontsize{8}{10}\selectfont}
+\newcommand{\aloha@tocnumfont}{\fontsize{4.3}{5}\selectfont}
+\newcommand{\aloha@conceptfont}{\bfseries\fontsize{10.5}{16}\selectfont}
+\newcommand{\aloha@annotfont}{\alohaextralight\fontsize{5.3}{7}\selectfont}
+\newcommand{\aloha@subheadfont}{\aloharegular\fontsize{6.6}{9}\selectfont}
+\newcommand{\aloha@problemfont}{\aloharegular\fontsize{8.5}{10}\selectfont}
+\newcommand{\aloha@problemidfont}{\alohaextralight\fontsize{5.7}{7}\selectfont}
+
+% --------------------------------------------------------------------------
+% 3. 덱 메타데이터 (강의마다 설정)
+% --------------------------------------------------------------------------
+\def\aloha@deckheader{2026 ALOHA 1학기 멘토링}
+\def\aloha@deckfooter{2026 ALOHA}
+\def\aloha@lecturetag{}
+\newcommand{\deckheader}[1]{\gdef\aloha@deckheader{#1}}  % 상단 러닝 헤더
+\newcommand{\deckfooter}[1]{\gdef\aloha@deckfooter{#1}}  % 하단 중앙 문구
+\newcommand{\lecturetag}[1]{\gdef\aloha@lecturetag{#1}}  % 타이틀의 "#중급반 n주차"
+
+\def\aloha@pagevariant{normal} % normal | outro
+
+% --------------------------------------------------------------------------
+% 4. 자동 목차 (\alohasection)
+%    - 섹션이 시작하는 프레임 "바로 앞"에 \alohasection{이름} 을 쓰면
+%      aux를 통해 타이틀 페이지 우측 목차에 (페이지, 이름)이 자동 등록됨.
+%    - 페이지 번호가 반영되려면 2회 컴파일 필요 (latexmk가 자동 처리)
+% --------------------------------------------------------------------------
+\def\aloha@seclist{}
+\newcounter{aloha@nsec}
+\def\aloha@sec#1#2{%
+  \g@addto@macro\aloha@seclist{\aloha@tocentry{#1}{#2}}%
+  \stepcounter{aloha@nsec}%
+}
+\newcommand{\alohasection}[1]{%
+  \protected@write\@auxout{}{\string\aloha@sec{#1}{\thepage}}%
+}
+
+% --------------------------------------------------------------------------
+% 5. 페이지 배경 (모든 페이지 공통 장식 + 타이틀 페이지)
+% --------------------------------------------------------------------------
+\newdimen\slidewidth  \slidewidth=\the\paperwidth
+\newdimen\slideheight \slideheight=\the\paperheight
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{title page}{}
+\setbeamertemplate{frametitle}{}
+\setbeamertemplate{caption}{\aloha@annotfont\color{aloha-gray}\insertcaption}
+\setbeamertemplate{caption label separator}{}
+
+% 상/하단 장식 영역 확보 (본문이 헤더/푸터를 침범하지 않도록)
+\setbeamertemplate{headline}{\vskip16mm}
+\setbeamertemplate{footline}{\vskip9mm}
+\setbeamersize{text margin left=12mm, text margin right=12mm}
+
+\newcounter{aloha@tocpos}
+
+\setbeamertemplate{background}{%
+\begin{tikzpicture}
+  \useasboundingbox (0,0) rectangle (\slidewidth,\slideheight);
+  \fill[white] (0,0) rectangle (\slidewidth,\slideheight);
+  % --- 모서리 등록 마크 (좌상단 / 우하단) ---
+  \draw[line width=0.5pt, aloha-ink] (5.2mm,\slideheight-11.5mm) -- (5.2mm,\slideheight-1.5mm);
+  \draw[line width=0.5pt, aloha-ink] (1.8mm,\slideheight-3.6mm) -- (10mm,\slideheight-3.6mm);
+  \draw[line width=0.5pt, aloha-ink] (\slidewidth-5.2mm,1.5mm) -- (\slidewidth-5.2mm,11.5mm);
+  \draw[line width=0.5pt, aloha-ink] (\slidewidth-10mm,3.6mm) -- (\slidewidth-1.8mm,3.6mm);
+  % --- 하단 푸터: "2026 ALOHA" + 좌우 가로줄 ---
+  \node (aloha@ftr) at (0.5\slidewidth, 4.5mm)
+    {\aloha@footerfont\color{aloha-gray}\aloha@deckfooter};
+  \draw[line width=0.3pt, aloha-gray]
+    (0.5\slidewidth-40mm, 4.5mm) -- ($(aloha@ftr.west)+(-2mm,0)$);
+  \draw[line width=0.3pt, aloha-gray]
+    ($(aloha@ftr.east)+(2mm,0)$) -- (0.5\slidewidth+40mm, 4.5mm);
+  % --- 우상단 페이지 번호 ---
+  \node[anchor=east] at (\slidewidth-4mm, \slideheight-5mm)
+    {\aloha@pagenumfont\color{aloha-lightgray}\insertframenumber};
+  %
+  \ifnum\thepage=1\relax
+    % ================= 타이틀 페이지 =================
+    % 헤더 (우측 정렬)
+    \node[anchor=east] at (\slidewidth-10mm, \slideheight-6mm)
+      {\aloha@headerfont\color{aloha-gray}\aloha@deckheader};
+    % "#중급반 n주차" 태그 + 하이라이트 박스
+    \setbox\z@=\hbox{\aloha@tagfont\aloha@lecturetag}%
+    \ifdim\wd\z@>1pt
+      \fill[aloha-highlight] (9.5mm,\slideheight-10.8mm) rectangle (30mm,\slideheight-7.5mm);
+      \node[anchor=base west, inner sep=0pt] at (12mm,\slideheight-12.8mm)
+        {\aloha@tagfont\color{aloha-ink}\#\aloha@lecturetag};
+    \fi
+    % 강의 제목
+    \node[anchor=base west, inner sep=0pt] (aloha@bigtitle) at (12mm,\slideheight-46.5mm)
+      {\aloha@bigtitlefont\color{aloha-ink}\inserttitle};
+    % 부제 + 하이라이트 바 (바 길이는 부제 길이에 맞춤)
+    \setbox\z@=\hbox{\aloha@titlesubfont<\insertsubtitle>}%
+    \ifdim\wd\z@>1pt
+      \node[anchor=base west, inner sep=0pt] (aloha@subt) at (12mm,\slideheight-55.5mm)
+        {\aloha@titlesubfont\color{aloha-ink}<\insertsubtitle>};
+      \begin{scope}[on background layer]
+        \shade[left color=aloha-highlight!40!white, right color=aloha-highlight]
+          ($(aloha@subt.south west)+(-1.5mm,-0.8mm)$)
+          rectangle ($(aloha@subt.base east)+(3mm,1.8mm)$);
+      \end{scope}
+    \fi
+    % 우측 자동 목차
+    \ifnum\value{aloha@nsec}>0
+      \setcounter{aloha@tocpos}{0}%
+      \def\aloha@tocentry##1##2{%
+        \stepcounter{aloha@tocpos}%
+        \dimen@=\dimexpr\slideheight-32mm-9mm*\numexpr\value{aloha@tocpos}-1\relax\relax
+        \edef\aloha@tocy{\the\dimen@}%
+        \node[anchor=base west, inner sep=0pt]
+          at (118.5mm, \aloha@tocy)
+          {{\aloha@tocnumfont\color{aloha-ink}\raisebox{2.2pt}{##2p}}%
+           {\aloha@tocfont\color{aloha-ink}/<##1>}};%
+      }%
+      \aloha@seclist
+      \dimen@=\dimexpr\slideheight-32mm+4.5mm\relax
+      \edef\aloha@toctop{\the\dimen@}%
+      \dimen@=\dimexpr\slideheight-32mm-9mm*\numexpr\value{aloha@nsec}-1\relax-3mm\relax
+      \edef\aloha@tocbot{\the\dimen@}%
+      \draw[line width=0.4pt, aloha-ink] (113mm, \aloha@toctop) -- (113mm, \aloha@tocbot);
+      \draw[line width=0.4pt, aloha-ink] (110mm, \aloha@toctop) -- (116mm, \aloha@toctop);
+      \draw[line width=0.4pt, aloha-ink] (110mm, \aloha@tocbot) -- (116mm, \aloha@tocbot);
+    \fi
+  \else
+    \ifdefstring{\aloha@pagevariant}{outro}{%
+      % ================= 마무리(아웃트로) 페이지 =================
+      \node[anchor=east] at (\slidewidth-10mm, \slideheight-6mm)
+        {\aloha@headerfont\color{aloha-gray}\aloha@deckheader};
+      \node at (0.5\slidewidth, 0.5\slideheight+2mm)
+        {\includegraphics[height=56mm]{images/aloha-logo-large.png}};
+    }{%
+      % ================= 일반 콘텐츠 페이지 =================
+      % 헤더 (중앙)
+      \node at (0.5\slidewidth, \slideheight-3.7mm)
+        {\aloha@headerfont\color{aloha-gray}\aloha@deckheader};
+      % 좌하단 로고
+      \node[anchor=south west, inner sep=0pt] at (3.5mm, 2.5mm)
+        {\includegraphics[height=6.5mm]{images/aloha-logo-small.png}};
+      % 프레임 제목: "#제목" + 하이라이트 박스 + 부제
+      \setbox\z@=\hbox{\aloha@frametitlefont\insertframetitle}%
+      \ifdim\wd\z@>1pt
+        \fill[aloha-highlight] (9.5mm,\slideheight-10.8mm) rectangle (30mm,\slideheight-7.5mm);
+        \node[anchor=base west, inner sep=0pt] at (12mm,\slideheight-12.8mm)
+          {\aloha@frametitlefont\color{aloha-ink}\#\insertframetitle};
+        \setbox\z@=\hbox{\aloha@framesubfont\insertframesubtitle}%
+        \ifdim\wd\z@>1pt
+          \node[anchor=base west, inner sep=0pt] at (12mm,\slideheight-16.2mm)
+            {\aloha@framesubfont\color{aloha-ink}\insertframesubtitle};
+        \fi
+      \fi
+    }%
+  \fi
+\end{tikzpicture}%
+}
+
+% --------------------------------------------------------------------------
+% 6. beamer 기본 요소
+% --------------------------------------------------------------------------
+\setbeamercolor{normal text}{fg=aloha-ink, bg=white}
+\setbeamercolor{structure}{fg=aloha-accent}
+\setbeamercolor{alerted text}{fg=aloha-accent}     % \alert{...} = 보라 강조
+\setbeamercolor{itemize item}{fg=aloha-ink}
+\setbeamercolor{itemize subitem}{fg=aloha-ink}
+\setbeamercolor{enumerate item}{fg=aloha-ink}
+\setbeamercolor{enumerate subitem}{fg=aloha-ink}
+
+\setbeamertemplate{itemize item}{–}
+\setbeamertemplate{itemize subitem}{–}
+\setbeamertemplate{itemize subsubitem}{–}
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subsubbody}{size=\normalsize}
+
+\setlength{\leftmargini}{1.5em}
+\setlength{\leftmarginii}{1.5em}
+\setlength{\leftmarginiii}{1.5em}
+
+% --------------------------------------------------------------------------
+% 7. 강의 작성용 커스텀 커맨드
+% --------------------------------------------------------------------------
+% 개념 설명 (마루부리 중간 22pt 상당) — 2페이지 스타일 정의문
+\newcommand{\concept}[1]{{\aloha@conceptfont #1\par}}
+
+% 부연설명 (아주가는 11pt 상당, 회색)
+\newcommand{\annot}[1]{{\aloha@annotfont\color{aloha-gray}#1\par}}
+
+% 형광펜 하이라이트 (배경 #ECE4F9). 줄바꿈 불가 — 짧은 구절에 사용
+\newcommand{\hl}[1]{{\setlength{\fboxsep}{1.2pt}\colorbox{aloha-highlight}{#1}}}
+
+% "<문제 설명>", "<제약 조건>" 스타일의 소제목
+\newcommand{\subhead}[1]{{\aloha@subheadfont <#1>\par}\vspace{1mm}}
+
+% solved.ac 난이도 아이콘 (images/0..30.svg.png)
+%   0=Unrated, 1-5=Bronze V..I, 6-10=Silver, 11-15=Gold, 16-20=Platinum, ...
+\newcommand{\difficulty}[1]{\raisebox{-0.22\height}{\includegraphics[height=1.15em]{#1.svg.png}}}
+
+% 문제 제목: \problemtitle{난이도}{문제 이름}{BOJ 번호}
+\newcommand{\problemtitle}[3]{%
+  {\difficulty{#1}\hspace{0.45em}{\aloha@problemfont #2}\hspace{0.35em}%
+   {\aloha@problemidfont\color{aloha-gray}(\href{https://www.acmicpc.net/problem/#3}{BOJ \##3})}}}
+
+% 문제 리스트 항목 (필수 문제 / 연습 문제 슬라이드용)
+%   \problemitem{난이도}{문제 이름}{BOJ 번호}{한 줄 설명}
+\newcommand{\problemitem}[4]{%
+  \par\vspace{3.5mm}%
+  {\problemtitle{#1}{#2}{#3}\par}%
+  \vspace{1.2mm}%
+  {\hspace*{1.9em}\aloha@annotfont\color{aloha-gray}#4\par}}
+
+% 시간복잡도 표기
+\newcommand{\complexity}[1]{$\mathcal{O}\left({#1}\right)$}
+
+% 2단 레이아웃 + 중앙 세로 구분선:
+%   \begin{twocol} 왼쪽 내용 \colsplit 오른쪽 내용 \end{twocol}
+\newcommand{\aloha@vdivider}{%
+  \begin{tikzpicture}
+    \draw[line width=0.4pt, aloha-ink] (0,0) -- (0,-46mm);
+    \draw[line width=0.4pt, aloha-ink] (-2.5mm,0) -- (2.5mm,0);
+    \draw[line width=0.4pt, aloha-ink] (-2.5mm,-46mm) -- (2.5mm,-46mm);
+  \end{tikzpicture}}
+\newenvironment{twocol}
+  {\begin{columns}[T]\column{0.455\textwidth}}
+  {\end{columns}}
+\newcommand{\colsplit}{\column{0.05\textwidth}\centering\aloha@vdivider\column{0.455\textwidth}}
+
+% 마무리 슬라이드 (중앙 대형 로고)
+\newcommand{\closingframe}{%
+  \gdef\aloha@pagevariant{outro}%
+  \begin{frame}\end{frame}%
+  \gdef\aloha@pagevariant{normal}}
+
+% 백업 슬라이드 (페이지 번호 고정)
+\newcommand{\backupbegin}{%
+   \newcounter{finalframe}%
+   \setcounter{finalframe}{\value{framenumber}}}
+\newcommand{\backupend}{%
+   \setcounter{framenumber}{\value{finalframe}}}
+
+\makeatother

@@ -1,0 +1,37 @@
+name: Build lecture PDFs
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compile with XeLaTeX (+minted)
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: |
+            main.tex
+            lectures/week01-complexity.tex
+          latexmk_use_xelatex: true
+          latexmk_shell_escape: true
+          work_in_root_file_dir: false
+          extra_system_packages: |
+            py3-pygments
+            py3-pip
+          # minted v3 (TeX Live 2024+)는 latexminted 파이썬 패키지가 필요
+          pre_compile: pip3 install --break-system-packages latexminted pygments || true
+
+      - name: Upload PDFs
+        uses: actions/upload-artifact@v4
+        with:
+          name: lecture-pdfs
+          path: |
+            main.pdf
+            week01-complexity.pdf
+          if-no-files-found: error

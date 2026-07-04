@@ -1,0 +1,754 @@
+%!TEX program = xelatex
+% ==========================================================================
+%  2026-1 중급반 1주차: 시간 복잡도 & 누적 합
+%  - 기존 PPT 강의자료를 ALOHA LaTeX 템플릿으로 포팅한 것입니다.
+%  - 컴파일: 레포 루트에서  latexmk lectures/week01-complexity.tex
+% ==========================================================================
+\input{header}
+\usetikzlibrary{arrows.meta}
+
+\deckheader{2026 ALOHA 1학기 멘토링}
+\deckfooter{2026 ALOHA}
+\lecturetag{중급반 1주차}
+\title{시간 복잡도 \& 누적 합}
+\subtitle{Time Complexity \& Prefix Sum}
+
+% 2차원 누적 합 시각화용 미니 그리드 (좌상/우상/좌하/우하 칸의 색)
+\newcommand{\minigrid}[4]{%
+  \begin{tikzpicture}[line width=0.35pt]
+    \fill[#1] (0,10mm) rectangle (7mm,16mm);
+    \fill[#2] (7mm,10mm) rectangle (16mm,16mm);
+    \fill[#3] (0,0) rectangle (7mm,10mm);
+    \fill[#4] (7mm,0) rectangle (16mm,10mm);
+    \draw[aloha-ink] (0,0) rectangle (16mm,16mm);
+    \draw[aloha-ink] (7mm,0) -- (7mm,16mm);
+    \draw[aloha-ink] (0,10mm) -- (16mm,10mm);
+  \end{tikzpicture}}
+
+\begin{document}
+
+\frame{\titlepage}
+
+% ==========================================================
+\alohasection{시간 복잡도}
+% ==========================================================
+
+\begin{frame}{시간 복잡도}{<Time Complexity>}
+  \concept{%
+    알고리즘의 \alert{성능을 평가하는 지표} 중 하나이자,\\
+    \hl{문제를 해결하는 데 걸리는 시간과 입력의 관계}를 나타내는 함수}
+\end{frame}
+
+\begin{frame}{시간 복잡도}{<Time Complexity> - 계산하는 방법}
+  \begin{enumerate}
+    \item (PS 한정) 최악의 경우를 가정한다.
+    \item 사칙연산, 대입 연산 등의 기본 연산이 수행되는 횟수를 대략적으로 계산한다.
+    \item 최고차항의 차수를 확인한다. (10p에서 설명)
+  \end{enumerate}
+  \vspace{8mm}
+  \annot{PS = Problem Solving, 알고리즘 문제 풀이\\
+    알고리즘 대회에서 접하는 문제들은 최악의 경우만 가정해도 되지만,\\
+    전공 과목이나 연구에서는 다양한 상황을 고려합니다.}
+\end{frame}
+
+\begin{frame}[fragile]{시간 복잡도}{<Time Complexity> - 계산 예시}
+  \begin{center}
+    \problemtitle{1}{N 찍기}{2741}
+  \end{center}
+  \vspace{2mm}
+  \begin{twocol}
+    \subhead{문제 설명}
+    \begin{itemize}
+      \item 자연수 $N$이 주어짐
+      \item 1부터 $N$까지 한 줄에 하나씩 출력하기
+    \end{itemize}
+    \vspace{3mm}
+    \subhead{제약 조건}
+    \begin{itemize}
+      \item $1 \le N \le 100{,}000$
+    \end{itemize}
+  \colsplit
+    \begin{minted}{cpp}
+      #include <iostream>
+      using namespace std;
+      int main() {
+          int N;
+          cin >> N;
+          for(int i=1; i <= N; i++){
+              cout << i << '\n';
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{시간 복잡도}{<Time Complexity> - 계산 예시}
+  \begin{center}
+    \problemtitle{1}{N 찍기}{2741}
+  \end{center}
+  \vspace{2mm}
+  \begin{twocol}
+    \subhead{연산 횟수 계산}
+    \begin{itemize}
+      \item 변수 $N$을 선언하고 입력받음 $\to$ 2번
+      \item for문으로 $i=1$부터 $i=N$까지 더해줌 $\to$ $N+1$번
+      \item for문 내에서 출력 사용 $\to$ $N$번
+      \item[] \vspace{1mm}
+      \item 연산 횟수 $T(N) = 2N+3$
+    \end{itemize}
+  \colsplit
+    \begin{minted}{cpp}
+      #include <iostream>
+      using namespace std;
+      int main() {
+          int N;
+          cin >> N;
+          for(int i=1; i <= N; i++){
+              cout << i << '\n';
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{시간 복잡도}{<Time Complexity> - 계산 예시}
+  \begin{center}
+    \problemtitle{3}{별 찍기 1}{2438}
+  \end{center}
+  \vspace{2mm}
+  \begin{twocol}
+    \subhead{문제 설명}
+    \begin{itemize}
+      \item 자연수 $N$이 주어짐
+      \item 첫째 줄에는 별 1개, 둘째 줄에는 별 2개, $\cdots$
+      \item $N$번째 줄에는 별 $N$개를 찍는 문제
+    \end{itemize}
+    \vspace{3mm}
+    \subhead{제약 조건}
+    \begin{itemize}
+      \item $1 \le N \le 100$
+    \end{itemize}
+  \colsplit
+    \begin{minted}{cpp}
+      #include <iostream>
+      using namespace std;
+      int main() {
+          int N;
+          cin >> N;
+          for(int i=1; i <= N; i++){
+              for(int j=1; j <= i; j++){
+                  cout << '*';
+              }
+              cout << '\n';
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{시간 복잡도}{<Time Complexity> - 계산 예시}
+  \begin{center}
+    \problemtitle{3}{별 찍기 1}{2438}
+  \end{center}
+  \vspace{2mm}
+  \begin{twocol}
+    \subhead{연산 횟수 계산}
+    \begin{itemize}
+      \item 변수 $N$을 선언하고 입력받음 $\to$ 2번
+      \item $i=1$에서 $i=N$까지 더해줌 $\to$ $N+1$번
+      \item 첫번째 for문 내에서 일어나는 연산 $\to$ $2i+2$번
+      \item[] \vspace{1mm}
+      \item 연산 횟수
+        $T(N) = N + 3 + \sum\limits_{i=1}^{N}(2i+2) = N^2 + 4N + 3$
+    \end{itemize}
+  \colsplit
+    \begin{minted}{cpp}
+      #include <iostream>
+      using namespace std;
+      int main() {
+          int N;
+          cin >> N;
+          for(int i=1; i <= N; i++){
+              for(int j=1; j <= i; j++){
+                  cout << '*';
+              }
+              cout << '\n';
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{시간 복잡도}{<Time Complexity> - 계산 예시}
+  \begin{center}
+    \problemtitle{6}{소수 찾기}{1978}
+  \end{center}
+  \vspace{2mm}
+  \begin{twocol}
+    \subhead{문제 설명}
+    \begin{itemize}
+      \item $N$개의 자연수가 주어짐
+      \item 주어진 $N$개의 수 중 소수의 개수를 구하기
+    \end{itemize}
+    \vspace{3mm}
+    \subhead{제약 조건}
+    \begin{itemize}
+      \item $1 \le N \le 100$
+      \item 주어지는 수는 1,000 이하 자연수
+    \end{itemize}
+  \colsplit
+    \begin{minted}[fontsize=\footnotesize]{cpp}
+      #include <iostream>
+      using namespace std;
+      int isPrime(int A) {
+          if(A == 1) return 0;
+          for(int i=2; i*i <= A; i++){
+              if(A % i == 0) return 0;
+          }
+          return 1;
+      }
+      int main() {
+          int N, ans=0;
+          cin >> N;
+          for(int i=0; i < N; i++){
+              int x; cin >> x;
+              ans += isPrime(x);
+          }
+          cout << ans;
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{시간 복잡도}{<Time Complexity> - 계산 예시}
+  \begin{center}
+    \problemtitle{6}{소수 찾기}{1978}
+  \end{center}
+  \vspace{2mm}
+  \begin{twocol}
+    \subhead{연산 횟수 계산}
+    \begin{itemize}
+      \item \texttt{isPrime()} 함수의 연산 횟수는 약 $\sqrt{A}$번
+      \item[] \vspace{1mm}
+      \item 주어진 자연수를 $A$라 하면,
+      \item 연산 횟수 $T(N) = \sum \sqrt{A}\, \le\, N\sqrt{A}$
+      \item $A$의 최댓값은 1,000이므로, $T(N) = \sqrt{1000}\,N$
+    \end{itemize}
+  \colsplit
+    \begin{minted}[fontsize=\footnotesize]{cpp}
+      #include <iostream>
+      using namespace std;
+      int isPrime(int A) {
+          if(A == 1) return 0;
+          for(int i=2; i*i <= A; i++){
+              if(A % i == 0) return 0;
+          }
+          return 1;
+      }
+      int main() {
+          int N, ans=0;
+          cin >> N;
+          for(int i=0; i < N; i++){
+              int x; cin >> x;
+              ans += isPrime(x);
+          }
+          cout << ans;
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{시간 복잡도}{<Time Complexity> - 점근 표기법}
+  함수에서 가장 중요한 정보: \alert{최고차항의} \hl{차수}
+  \vspace{3mm}
+  \begin{itemize}
+    \item $f(x) = 3x^2 + 10,\ g(x) = 100x$
+    \item[] \hspace{2em}%
+      \begin{tabular}{@{}ll@{}}
+        – $f(1) = 13$          & $g(1) = 100$      \\
+        – $f(10) = 310$        & $g(10) = 1{,}000$  \\
+        – $f(100) = 30{,}010$  & $g(100) = 10{,}000$ \\
+        – $f(1000) = 3{,}000{,}010$ & $g(1000) = 100{,}000$ \\
+      \end{tabular}
+    \item[] \vspace{2mm}
+    \item $x$가 \alert{특정 수보다 크면,} \hl{항상 $f(x)>g(x)$를 만족함}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{시간 복잡도}{<Time Complexity> - 점근 표기법}
+  시간 복잡도는 대개 Big-O 표기법을 사용해서 표기합니다.
+  \vspace{3mm}
+  \begin{itemize}
+    \item $f(n) \in O\left(g(n)\right)$
+    \begin{itemize}
+      \item 어떤 양수 $n_0$와 $c$가 존재하여
+      \item $n \ge n_0$을 만족하는 모든 $n$에 대해
+      \item $0 \le f(n) \le cg(n)$을 만족한다.
+    \end{itemize}
+    \item[] \vspace{2mm}
+    \item ..?
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{시간 복잡도}{<Time Complexity> - 점근 표기법}
+  \begin{itemize}
+    \item $f(n) \in O\left(g(n)\right)$
+    \begin{itemize}
+      \item 어떤 양수 $n_0$와 $c$가 존재하여 $n \ge n_0$을 만족하는 모든 $n$에 대해
+      \item $0 \le f(n) \le cg(n)$을 만족한다.
+    \end{itemize}
+    \item[] \vspace{3mm}
+    \item $n \ge n_0$을 만족하는 모든 $n$
+    \begin{itemize}
+      \item $n$이 \alert{한 없이 커지면} 항상 부등호 성립
+    \end{itemize}
+    \item 어떤 양수 $c$
+    \begin{itemize}
+      \item 최고차항 \alert{계수 무시} \& 최고차항의 \alert{차수만 확인}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{시간 복잡도}{<Time Complexity> - 점근 표기법}
+  \begin{enumerate}
+    \item $f(n) = 2n+3,\ g(n) = n$
+    \begin{itemize}
+      \item $n_0 = 3,\, c = 3$이면, $2n+3 \le 3n$ : $2n+3 \in O(n)$
+    \end{itemize}
+    \item[] \vspace{2mm}
+    \item $f(n) = n^2+4n+3,\ g(n) = n^2$
+    \begin{itemize}
+      \item $n_0 = 5,\, c = 2$이면, $n^2+4n+3 \le 2n^2$ : $n^2+4n+3 \in O(n^2)$
+    \end{itemize}
+  \end{enumerate}
+  \vspace{9mm}
+  \annot{Big-O Notation의 의미는 $f(x)$가 아무리 빨리 증가해도,\\
+    ``최대'' $g(x)$에 비례하는 수준으로 증가한다는 것입니다.\\
+    따라서 $f(n)=n+1$ 역시 $O(n^2)$이라 쓸 수 있어요!}
+\end{frame}
+
+\begin{frame}{시간 복잡도}{<Time Complexity> - 왜 중요한가?}
+  \begin{itemize}
+    \item 간단한 연산($+$, $=$ 등)은 1초에 10억 번 정도 실행되고,\\
+      복잡한 연산(\%, \texttt{sqrt()} 등)은 1초에 1억 번 정도 실행됨
+    \begin{itemize}
+      \item Online Judge 시스템 기준으로, 사용 환경에 따라 크게 다를 수 있음
+      \item 대부분의 상황에선 \hl{연산 1억 번 = 1초} 라고 기억해도 일반적으로 무방함
+    \end{itemize}
+    \item[] \vspace{3mm}
+    \item 문제 조건이 주어질 때, 주어진 시간 안에 프로그램이 실행되려면\\
+      어떤 시간 복잡도가 필요한지 가늠할 수 있음
+    \begin{itemize}
+      \item 문제 조건이 $N=10$만이라면? \complexity{N}이나 \complexity{N \log N}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{시간 복잡도}{<Time Complexity>}
+  $O(1) < O(\log N) < O\left(\sqrt{N}\right) < O(N) < O(N \log N)
+    < O(N^2) < \cdots < O(2^N) < O(N!)$
+  \vspace{2mm}
+  \begin{center}
+    \includegraphics[height=48mm]{week01/big-o-chart.jpeg}
+  \end{center}
+\end{frame}
+
+% ==========================================================
+\alohasection{누적 합}
+% ==========================================================
+
+\begin{frame}{누적 합}{<Prefix Sum>}
+  \begin{center}
+    \problemtitle{8}{구간 합 구하기 4}{11659}
+  \end{center}
+  \vspace{4mm}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \subhead{문제 설명}
+      \begin{itemize}
+        \item 수 $N$개가 주어짐
+        \item $i$번째 수부터 $j$번째 수까지 합을 구하기
+        \item 합을 구하는 연산은 $M$번 들어옴
+      \end{itemize}
+    \column{0.48\textwidth}
+      \subhead{제약 조건}
+      \begin{itemize}
+        \item $1 \le N \le 100{,}000$
+        \item $1 \le M \le 100{,}000$
+        \item $1 \le i \le j \le N$
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{누적 합}{<Prefix Sum>}
+  \begin{center}
+    \problemtitle{8}{구간 합 구하기 4}{11659}
+  \end{center}
+  \vspace{2mm}
+  \begin{twocol}
+    \subhead{문제 설명}
+    \begin{itemize}
+      \item 수 $N$개가 주어짐
+      \item $i$번째 수부터 $j$번째 수까지 합을 구하기
+      \item 합을 구하는 연산은 $M$번 들어옴
+    \end{itemize}
+    \vspace{3mm}
+    \subhead{제약 조건}
+    \begin{itemize}
+      \item $1 \le N \le 100{,}000$
+      \item $1 \le M \le 100{,}000$
+      \item $1 \le i \le j \le N$
+    \end{itemize}
+  \colsplit
+    \subhead{시간 복잡도}
+    연산 횟수 $M$이 최대 10만이기 때문에,\\
+    합을 구할 때 연산을 1,000번 이내로 해야 함
+    \vspace{4mm}
+
+    $N$이 최대 10만이기에,\\
+    연산 당 \complexity{\sqrt{N}} 이하의 시간 복잡도가 필요
+    \vspace{4mm}
+
+    $\to$ 누적 합을 이용하면 \complexity{1}에 가능!
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{누적 합}{<Prefix Sum>}
+  배열 $P$를 생각해보자: $P[n] = \sum\limits_{i=1}^{n} A[i]$
+  \vspace{4mm}
+  \begin{center}
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+      \hline
+      \rowcolor{aloha-highlight}
+      $i$    & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 \\ \hline
+      $A[i]$ & – & 3 & 1 & 4 & 1 & 5 & 9 & 2 & 6 \\ \hline
+    \end{tabular}
+
+    \vspace{2mm}
+    \begin{tikzpicture}
+      \draw[-{Triangle[width=4mm,length=2.5mm]}, line width=1.8mm, aloha-accent]
+        (0,0) -- (0,-7mm);
+    \end{tikzpicture}
+    \hspace{6mm}\raisebox{3mm}{\annot{누적 합을 구현할 때는 1-base로 사용하는 게 구현이 편해요!}}
+
+    \vspace{2mm}
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+      \hline
+      \rowcolor{aloha-highlight}
+      $i$    & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 \\ \hline
+      $P[i]$ & 0 & 3 & \cellcolor{aloha-accent!55}\color{white}4
+             &   &   &   &   &   &   \\ \hline
+    \end{tabular}
+  \end{center}
+\end{frame}
+
+\begin{frame}{누적 합}{<Prefix Sum>}
+  배열 $P$를 생각해보자: $P[n] = \sum\limits_{i=1}^{n} A[i]$
+  \vspace{4mm}
+  \begin{center}
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+      \hline
+      \rowcolor{aloha-highlight}
+      $i$    & 0 & 1 & 2 & 3 & 4 & 5 & 6  & 7  & 8  \\ \hline
+      $A[i]$ & – & 3 & 1 & 4 & 1 & 5 & 9  & 2  & 6  \\ \hline
+      $P[i]$ & 0 & 3 & 4 & 8 & 9 & 14 & 23 & 25 & 31 \\ \hline
+    \end{tabular}
+
+    \vspace{8mm}
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+      \hline
+      \rowcolor{aloha-highlight}
+      $i$    & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 \\ \hline
+      $P[i]$ & 0 & 3 & 4 & \cellcolor{aloha-accent!55}\color{white}8
+             & 9 & 14 & 23 & \cellcolor{aloha-accent!55}\color{white}25 & 31 \\ \hline
+    \end{tabular}
+
+    \vspace{2mm}
+    \annot{4번째 수부터 7번째 수까지 합은 $P[7]-P[4-1]$으로 구할 수 있어요!}
+  \end{center}
+\end{frame}
+
+\begin{frame}[fragile]{누적 합}{<Prefix Sum>}
+  \begin{center}
+    \problemtitle{8}{구간 합 구하기 4}{11659}
+  \end{center}
+  \vspace{2mm}
+  \begin{twocol}
+    \subhead{문제 설명}
+    \begin{itemize}
+      \item 수 $N$개가 주어짐
+      \item $i$번째 수부터 $j$번째 수까지 합을 구하기
+      \item 합을 구하는 연산은 $M$번 들어옴
+    \end{itemize}
+    \vspace{3mm}
+    \subhead{제약 조건}
+    \begin{itemize}
+      \item $1 \le N \le 100{,}000$
+      \item $1 \le M \le 100{,}000$
+      \item $1 \le i \le j \le N$
+    \end{itemize}
+  \colsplit
+    \begin{minted}{cpp}
+      int main() {
+          int N, M, L, R;
+          cin >> N >> M;
+          vector<int> A(N+1), P(N+1);
+          for(int i=1; i <= N; i++){
+              cin >> A[i];
+              P[i] += P[i-1]+A[i];
+          }
+          while(M--){
+              cin >> L >> R;
+              cout << P[R]-P[L-1] << '\n';
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{누적 합}{<Prefix Sum>}
+  \begin{center}
+    \problemtitle{8}{구간 합 구하기 4}{11659}
+  \end{center}
+  \vspace{2mm}
+  \begin{twocol}
+    \subhead{시간복잡도 계산}
+    \begin{itemize}
+      \item 누적 합을 저장하는 $P[\,]$ 전처리에 \complexity{N}
+      \item 구간 합을 구하는 연산 \complexity{1}
+      \item 구간 합을 구하는 횟수 $M$번
+      \item[] \vspace{1mm}
+      \item 시간 복잡도: \complexity{N+M}
+    \end{itemize}
+  \colsplit
+    \begin{minted}{cpp}
+      int main() {
+          int N, M, L, R;
+          cin >> N >> M;
+          vector<int> A(N+1), P(N+1);
+          for(int i=1; i <= N; i++){
+              cin >> A[i];
+              P[i] += P[i-1]+A[i];
+          }
+          while(M--){
+              cin >> L >> R;
+              cout << P[R]-P[L-1] << '\n';
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{누적 합}{<Prefix Sum> - 2차원 누적 합}
+  \begin{center}
+    \problemtitle{10}{구간 합 구하기 5}{11660}
+  \end{center}
+  \vspace{4mm}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \subhead{문제 설명}
+      \begin{itemize}
+        \item $N{\times}N$개의 수가 $N{\times}N$ 크기의 표에 채워져 있음
+        \item $(x_1, y_1)$부터 $(x_2, y_2)$까지 합을 구하기
+        \begin{itemize}
+          \item $(x, y)$는 $x$행 $y$열
+        \end{itemize}
+        \item 합을 구하는 연산은 $M$번 들어옴
+      \end{itemize}
+    \column{0.48\textwidth}
+      \subhead{제약 조건}
+      \begin{itemize}
+        \item $1 \le N \le 1{,}024$
+        \item $1 \le M \le 100{,}000$
+        \item $1 \le x_1 \le x_2 \le N$
+        \item $1 \le y_1 \le y_2 \le N$
+        \item 표에 채워진 수는 1000 이하 자연수
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{누적 합}{<Prefix Sum> - 2차원 누적 합}
+  배열 $P$를 생각해보자: $P[n][m] = \sum\limits_{i=1}^{n}\sum\limits_{j=1}^{m} A[i][j]$
+  \vspace{5mm}
+  \begin{center}
+    \begin{tabular}{cc}
+      \begin{tabular}{@{}c@{}}
+        {\aloharegular $A$}\\[1mm]
+        \begin{tabular}{|c|c|c|c|}
+          \hline
+          1 & 2 & 3 & 4 \\ \hline
+          2 & 3 & 4 & 5 \\ \hline
+          3 & 4 & 5 & 6 \\ \hline
+          4 & 5 & 6 & 7 \\ \hline
+        \end{tabular}
+      \end{tabular}
+      \hspace{18mm}
+      \begin{tabular}{@{}c@{}}
+        {\aloharegular $P$}\\[1mm]
+        \begin{tabular}{|c|c|c|c|}
+          \hline
+          1  & 3  & 6  & 10 \\ \hline
+          3  & 8  & 15 & 24 \\ \hline
+          6  & 15 & 27 & 42 \\ \hline
+          10 & 24 & 42 & 64 \\ \hline
+        \end{tabular}
+      \end{tabular}
+    \end{tabular}
+  \end{center}
+\end{frame}
+
+\begin{frame}{누적 합}{<Prefix Sum> - 2차원 누적 합}
+  $(x_1, y_1)$부터 $(x_2, y_2)$까지의 합:
+  $P[x_2][y_2] - P[x_1{-}1][y_2] - P[x_2][y_1{-}1] + P[x_1{-}1][y_1{-}1]$
+  \vspace{4mm}
+  \begin{center}
+    \begin{tabular}{cc}
+      \begin{tabular}{@{}c@{}}
+        {\aloharegular $A$}\\[1mm]
+        \begin{tabular}{|c|c|c|c|}
+          \hline
+          1 & 2 & 3 & 4 \\ \hline
+          2 & \cellcolor{aloha-highlight}3 & \cellcolor{aloha-highlight}4
+            & \cellcolor{aloha-highlight}5 \\ \hline
+          3 & \cellcolor{aloha-highlight}4 & \cellcolor{aloha-highlight}5
+            & \cellcolor{aloha-highlight}6 \\ \hline
+          4 & 5 & 6 & 7 \\ \hline
+        \end{tabular}
+      \end{tabular}
+      \hspace{18mm}
+      \begin{tabular}{@{}c@{}}
+        {\aloharegular $P$}\\[1mm]
+        \begin{tabular}{|c|c|c|c|}
+          \hline
+          1  & 3  & 6  & 10 \\ \hline
+          3  & 8  & 15 & 24 \\ \hline
+          6  & 15 & 27 & 42 \\ \hline
+          10 & 24 & 42 & 64 \\ \hline
+        \end{tabular}
+      \end{tabular}
+    \end{tabular}
+  \end{center}
+\end{frame}
+
+\begin{frame}{누적 합}{<Prefix Sum> - 2차원 누적 합}
+  $(x_1, y_1)$부터 $(x_2, y_2)$까지의 합:
+  $P[x_2][y_2] - P[x_1{-}1][y_2] - P[x_2][y_1{-}1] + P[x_1{-}1][y_1{-}1]$
+  \vspace{8mm}
+  \begin{center}
+    \minigrid{white}{white}{white}{aloha-highlight}%
+    \hspace{2mm}\raisebox{7mm}{$=$}\hspace{2mm}
+    \minigrid{aloha-accent!85}{aloha-accent!45}{aloha-accent!45}{aloha-highlight}%
+    \hspace{2mm}\raisebox{7mm}{$-$}\hspace{2mm}
+    \minigrid{aloha-accent!85}{white}{aloha-accent!45}{white}%
+    \hspace{2mm}\raisebox{7mm}{$-$}\hspace{2mm}
+    \minigrid{aloha-accent!85}{aloha-accent!45}{white}{white}%
+    \hspace{2mm}\raisebox{7mm}{$+$}\hspace{2mm}
+    \minigrid{aloha-accent!85}{white}{white}{white}
+  \end{center}
+\end{frame}
+
+\begin{frame}{누적 합}{<Prefix Sum> - 2차원 누적 합}
+  \begin{itemize}
+    \item Q: 그럼 배열 $P$는 어떤 방법으로 초기 값을 설정하나요?
+    \item A: 전 슬라이드 식 $(x_1, y_1)$, $(x_2, y_2)$에 $(N, M)$을 넣어봅시다!
+    \item[] \vspace{2mm}
+    \item[] $A[N][M] = P[N][M] - P[N{-}1][M] - P[N][M{-}1] + P[N{-}1][M{-}1]$
+    \item[] \vspace{2mm}
+    \item 정리하면…
+    \item[] \vspace{2mm}
+    \item[] \hl{$P[N][M] = A[N][M] + P[N{-}1][M] + P[N][M{-}1] - P[N{-}1][M{-}1]$}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{누적 합}{<Prefix Sum>}
+  \begin{center}
+    \problemtitle{10}{구간 합 구하기 5}{11660}
+  \end{center}
+  \vspace{2mm}
+  \begin{twocol}
+    \subhead{문제 설명}
+    \begin{itemize}
+      \item $N{\times}N$개의 수가 $N{\times}N$ 크기의 표에 채워져 있음
+      \item $(x_1, y_1)$부터 $(x_2, y_2)$까지 합을 구하기
+      \begin{itemize}
+        \item $(x, y)$는 $x$행 $y$열
+      \end{itemize}
+      \item 합을 구하는 연산은 $M$번 들어옴
+    \end{itemize}
+  \colsplit
+    \begin{minted}[fontsize=\footnotesize]{cpp}
+      int main(void)
+      {
+          ios::sync_with_stdio(0); cin.tie(0);  // 빠른 입출력
+          int A[1025][1025]={0,}, P[1025][1025]={0,};
+          int N, M, x1, y1, x2, y2;
+          cin >> N >> M;
+          for(int i=1; i <= N; i++){
+              for(int j=1; j <= N; j++){
+                  cin >> P[i][j];
+                  P[i][j] += P[i-1][j] + P[i][j-1] - P[i-1][j-1];
+              }
+          }
+          for(int i=0; i < M; i++){
+              cin >> x1 >> y1 >> x2 >> y2;
+              cout << P[x2][y2]-P[x1-1][y2]-P[x2][y1-1]+P[x1-1][y1-1];
+              cout << '\n';
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+% ==========================================================
+\alohasection{필수 문제}
+% ==========================================================
+
+\begin{frame}{필수 문제}
+  \problemitem{8}{구간 합 구하기 4}{11659}{1차원 누적합을 구현해보아요}
+  \problemitem{10}{구간 합 구하기 5}{11660}{2차원 누적합을 구현해보아요}
+\end{frame}
+
+% ==========================================================
+\alohasection{연습 문제 도전}
+% ==========================================================
+
+\begin{frame}{연습 문제 도전}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \problemitem{10}{인간-컴퓨터 상호작용}{16139}{여러 가지 누적 합을 미리 전처리하기}
+      \problemitem{12}{체스판 다시 칠하기 2}{25682}{배열에 어떤 정보를 저장해야 할까요?}
+      \problemitem{12}{부분합}{1806}{배울 것이 많은 좋은 문제}
+    \column{0.48\textwidth}
+      \problemitem{11}{문자열 일치도}{34837}{2025 HCPC Beginner Div. E번 | Advanced Div. C번}
+      \problemitem{12}{직사각형과 쿼리}{14846}{문제의 조건에 주목해 봅시다.}
+      \problemitem{13}{나머지 합}{10986}{특정 조건을 만족하는 구간의 개수는?}
+  \end{columns}
+\end{frame}
+
+% ==========================================================
+%  TMI 모음
+% ==========================================================
+
+\begin{frame}{시간 복잡도}{<Time Complexity> - TMI 모음}
+  \begin{itemize}
+    \item 시간 복잡도는 Big-$\Omega$ 표기법과 Big-$\Theta$ 표기법으로도 표현할 수 있습니다.
+    \item[] \vspace{2mm}
+    \item Big-$\Omega$ 표기법은 $f(x)$가 ``최소'' $g(x)$에 비례하는 수준으로 증가할 때,
+    \item Big-$\Theta$ 표기법은 $f(x)$가 $g(x)$에 비례하는 수준으로 증가할 때
+      사용할 수 있습니다.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{시간 복잡도}{<Time Complexity> - TMI 모음}
+  \begin{itemize}
+    \item[] $\displaystyle\sum_{i=1}^{N} \frac{1}{i} = O(\log N)$
+    \item[] \vspace{2mm}
+    \item[] $\displaystyle\sum_{i=1}^{N} i^k = O(N^{K+1})$
+    \item[] \vspace{2mm}
+    \item[] $\log(N!) = O(N \log N)$
+  \end{itemize}
+\end{frame}
+
+\closingframe
+
+\end{document}
