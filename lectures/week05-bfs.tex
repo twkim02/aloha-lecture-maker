@@ -1,0 +1,540 @@
+%!TEX program = xelatex
+% ==========================================================================
+%  2026-1 중급반 5주차: 너비 우선 탐색 (BFS)
+%  - 기존 PPT 강의자료를 ALOHA LaTeX 템플릿으로 포팅한 것입니다.
+%  - 컴파일: 레포 루트에서  latexmk lectures/week05-bfs.tex
+% ==========================================================================
+\input{header}
+\usetikzlibrary{arrows.meta}
+
+\deckheader{2026 ALOHA 1학기 멘토링}
+\deckfooter{2026 ALOHA}
+\lecturetag{중급반 5주차}
+\title{너비 우선 탐색 (BFS)}
+\subtitle{Breadth First Search}
+
+% DFS/BFS 예제 그래프 지문 (여러 슬라이드 공통) — 이미지/방문순서만 교체
+\newcommand{\graphintro}[3]{% #1=이미지, #2=도입 접두, #3=방문순서 문장
+  \begin{columns}[c]
+    \column{0.42\textwidth}
+      #2오른쪽 무방향 그래프를 가지고 한번 이해해보도록 합시다.
+      \par\vspace{3mm}
+      엄밀성을 위해,
+      \begin{itemize}
+        \item 시작 정점은 A입니다.
+        \item 탐색할 수 있는 정점이 여러 개일 경우 사전순으로 가장 빠른 정점을 선택합니다.
+        \item 한번 방문한 정점은 다시 방문하지 않습니다.
+      \end{itemize}
+      라고 합시다.
+      \par\vspace{3mm}
+      #3
+    \column{0.56\textwidth}
+      \includegraphics[width=\linewidth]{week05/#1}
+  \end{columns}}
+
+\begin{document}
+
+\frame{\titlepage}
+
+% ==========================================================
+\alohasection{복습 - 그래프}
+% ==========================================================
+
+\begin{frame}{BFS}{<복습 - 그래프>}
+  \vspace{6mm}
+  그래프를 표현하는 방식으로는 대표적으로 2가지가 있습니다.\par\vspace{2mm}
+  \alert{인접 리스트(Adjacency List)}와 \alert{인접 행렬(Adjacency Matrix)}\par\vspace{5mm}
+  \begin{itemize}
+    \item 인접 리스트는 각각 정점들에 대해 간선으로 연결되어 있는 정점들을 각각의
+      리스트로 표현하는 방식입니다.
+    \item 인접 행렬은 $i$번 정점에서 $j$번 정점으로 가는 간선이 존재할 경우 행렬의
+      $i$번째 행 $j$번째 열의 값을 1, 존재하지 않을 경우 0으로 설정해 표현하는 방식입니다.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{BFS}{<복습 - 그래프>}
+  \begin{columns}[c]
+    \column{0.42\textwidth}
+      {\aloha@subheadfont <인접 리스트>\par}\vspace{1mm}
+      \begin{center}\small
+        \setlength{\arrayrulewidth}{0.3pt}\renewcommand{\arraystretch}{1.25}
+        \begin{tabular}{|c|c|}
+          \hline
+          \rowcolor{aloha-highlight}\cellcolor{aloha-highlight}1 & 2, 5 \\ \hline
+          \cellcolor{aloha-highlight}2 & 3, 5 \\ \hline
+          \cellcolor{aloha-highlight}3 &      \\ \hline
+          \cellcolor{aloha-highlight}4 & 1    \\ \hline
+          \cellcolor{aloha-highlight}5 & 1, 6 \\ \hline
+          \cellcolor{aloha-highlight}6 & 3    \\ \hline
+        \end{tabular}
+      \end{center}
+      \vspace{2mm}
+      {\aloha@subheadfont <인접 행렬>\par}\vspace{1mm}
+      \begin{center}\small
+        \setlength{\arrayrulewidth}{0.3pt}\renewcommand{\arraystretch}{1.2}
+        \begin{tabular}{|*{6}{c}|}
+          \hline
+          0 & 1 & 0 & 0 & 1 & 0 \\
+          0 & 0 & 1 & 0 & 1 & 0 \\
+          0 & 0 & 0 & 0 & 0 & 0 \\
+          1 & 0 & 0 & 0 & 0 & 0 \\
+          1 & 0 & 0 & 0 & 0 & 1 \\
+          0 & 0 & 1 & 0 & 0 & 0 \\ \hline
+        \end{tabular}
+      \end{center}
+    \column{0.56\textwidth}
+      \includegraphics[width=\linewidth]{week05/graph-review.png}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{BFS}{<복습 - 그래프>}
+  \begin{twocol}
+    \vspace{6mm}
+    C++로 인접 리스트를 어떻게 구현할 수 있는지 알아봅시다.\par\vspace{2mm}
+    인접 리스트의 구현 자체는 한 줄로 충분합니다. 최대 정점 개수 만큼의 정수형
+    vector 배열을 만들어 주면 됩니다.\par\vspace{2mm}
+    정점 $u$에서 정점 $v$로 가는 간선을 추가하기 위해서는 $u$번째 vector에 $v$를
+    추가해주면 됩니다.
+  \colsplit
+    \vspace{10mm}
+    \begin{minted}{cpp}
+      vector<int> edges[200005];
+      int u, v;
+      cin >> u >> v;
+      edges[u].push_back(v);
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{BFS}{<복습 - 그래프>}
+  \begin{twocol}
+    \vspace{6mm}
+    다음은 인접 행렬의 구현을 알아봅시다.\par\vspace{2mm}
+    인접 행렬의 구현도 간단히 2차원 배열 하나로 끝납니다.\par\vspace{2mm}
+    정점 $u$에서 정점 $v$로 가는 간선을 추가하기 위해서는 $u$번째 행 $v$번째 열을
+    1로 바꾸면 됩니다.
+  \colsplit
+    \vspace{10mm}
+    \begin{minted}{cpp}
+      int graph[305][305];
+      int u, v;
+      cin >> u >> v;
+      graph[u][v] = 1;
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+% ==========================================================
+\alohasection{복습 - DFS}
+% ==========================================================
+
+\begin{frame}{BFS}{<복습 - DFS>}
+  \vspace{8mm}
+  \concept{DFS / Depth-First-Search -- 깊이 우선 탐색}
+  \vspace{6mm}
+  깊이 우선 탐색은 그래프에서 한 가지로 최대한 깊이 들어가서 탐색한 후 더 이상 탐색할
+  수 없을 경우 돌아와서 다음 가지를 탐색하는 방식입니다.
+\end{frame}
+
+% DFS 탐색 애니메이션 (6컷) — 텍스트 동일, 그래프 하이라이트만 변화
+\newcommand{\dfsanim}[1]{%
+  \begin{frame}{BFS}{<복습 - DFS>}
+    \graphintro{dfs#1.png}{}{이 경우 방문 순서는 \alert{A B C F E D} 가 됩니다.}
+  \end{frame}}
+\dfsanim{1}\dfsanim{2}\dfsanim{3}\dfsanim{4}\dfsanim{5}\dfsanim{6}
+
+\begin{frame}[fragile]{BFS}{<복습 - DFS>}
+  \begin{twocol}
+    \vspace{16mm}
+    이제 실제로 DFS를 구현해볼 차례입니다.\par\vspace{2mm}
+    DFS는 재귀함수를 이용해 재귀적으로 구현합니다.
+  \colsplit
+    \begin{minted}{cpp}
+      bool vis[1005];
+      vector<int> edges[1005];
+      void dfs(int cur)
+      {
+          vis[cur] = 1;
+          cout << cur << ' ';
+          for (int &nxt : edges[cur])
+          {
+              if (vis[nxt]) continue;
+              dfs(nxt);
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{BFS}{<복습 - DFS>}
+  \begin{twocol}
+    오른쪽은 간단한 재귀 DFS 구현입니다. DFS로 방문한 순서대로 정점 번호를 출력합니다.
+    \par\vspace{2mm}
+    방문했던 정점은 다시 방문하지 않기 위해, \texttt{vis}라는 이름의 bool 배열을
+    만들어줍니다. \texttt{vis[i]}의 값이 true면 $i$번째 정점을 이미 방문했다는 뜻입니다.
+    \par\vspace{2mm}
+    이제 천천히 \texttt{dfs} 함수를 살펴봅시다. 이 함수의 인자는 현재 정점 번호(\texttt{cur})입니다.
+    우선 현재 방문한 정점을 방문했다고 기록해줍니다. 그 후 그 정점 번호를 출력합니다.
+  \colsplit
+    \begin{minted}{cpp}
+      bool vis[1005];
+      vector<int> edges[1005];
+      void dfs(int cur)
+      {
+          vis[cur] = 1;
+          cout << cur << ' ';
+          for (int &nxt : edges[cur])
+          {
+              if (vis[nxt]) continue;
+              dfs(nxt);
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{BFS}{<복습 - DFS>}
+  \begin{twocol}
+    \vspace{6mm}
+    그 후, 그 정점과 연결된 정점들을 확인합니다.\par\vspace{2mm}
+    만약 이미 방문한 정점이라면, 더 이상 탐색할 수 없으므로 \texttt{continue}합니다.\par\vspace{2mm}
+    방문하지 않은 정점이라면, 그 가지로 더 깊이 가기 위해 재귀 호출 인자로 그 정점의
+    번호를 넘겨줍니다.
+  \colsplit
+    \begin{minted}{cpp}
+      bool vis[1005];
+      vector<int> edges[1005];
+      void dfs(int cur)
+      {
+          vis[cur] = 1;
+          cout << cur << ' ';
+          for (int &nxt : edges[cur])
+          {
+              if (vis[nxt]) continue;
+              dfs(nxt);
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+% ==========================================================
+\alohasection{BFS}
+% ==========================================================
+
+\begin{frame}{BFS}{<BFS>}
+  \vspace{8mm}
+  \concept{BFS / Breadth-First-Search -- 너비 우선 탐색}
+  \vspace{6mm}
+  \begin{itemize}
+    \item 너비 우선 탐색은 시작 정점으로부터 가장 인접한 정점을 먼저 탐색하는 방식입니다.
+    \item 거리에 따라 단계별로 그 단계에 속하는 정점들을 방문한다고 생각하면 이해하기
+      편할 수 있습니다.
+  \end{itemize}
+\end{frame}
+
+% BFS 탐색 애니메이션 (4컷)
+\newcommand{\bfsanim}[1]{%
+  \begin{frame}{BFS}{<BFS>}
+    \graphintro{bfs#1.png}{이번에도 }{이 경우 방문 순서는 \alert{A B D E C F} 가 됩니다.}
+  \end{frame}}
+\bfsanim{1}\bfsanim{2}\bfsanim{3}\bfsanim{4}
+
+\begin{frame}{BFS}{<BFS>}
+  \begin{columns}[c]
+    \column{0.44\textwidth}
+      BFS를 구현할 때에는 \alert{Queue}라는 자료 구조를 사용합니다.\par\vspace{2mm}
+      Queue는 \alert{FIFO (First-In-First-Out)} 형태의 자료 구조입니다. 즉, 먼저
+      삽입된 원소는 항상 먼저 삭제됩니다.\par\vspace{3mm}
+      Queue에는 앞과 뒤가 있습니다.\\
+      Queue의 \alert{앞}에서는 \hl{조회 및 삭제가 가능합니다.}\\
+      Queue의 \alert{뒤}에서는 \hl{삽입이 가능합니다.}
+    \column{0.54\textwidth}
+      \begin{center}
+        \begin{tikzpicture}[font=\small]
+          \foreach \x/\v in {0/3, 1/5, 2/2, 3/1}
+            \node at (\x+0.5, 0.5) {\v};
+          \draw[line width=0.4pt] (0,0) -- (4,0);
+          \draw[line width=0.4pt] (0,1) -- (4,1);
+          \foreach \x in {1,2,3} \draw[line width=0.4pt] (\x,0) -- (\x,1);
+          \node[left] at (-0.9,0.5) {앞};
+          \draw[-{Latex}, line width=0.4pt] (-0.7,0.5) -- (-0.05,0.5);
+          \node[right] at (4.9,0.5) {뒤};
+          \draw[-{Latex}, line width=0.4pt] (4.7,0.5) -- (4.05,0.5);
+        \end{tikzpicture}
+      \end{center}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{BFS}{<BFS>}
+  \begin{twocol}
+    \vspace{4mm}
+    BFS를 구현해봅시다.\par\vspace{2mm}
+    DFS와 다르게, BFS는 재귀적으로 구현하지 않고, \texttt{queue}를 사용해 비재귀적으로
+    구현합니다.\par\vspace{2mm}
+    \texttt{queue}가 FIFO 형태의 자료구조임을 생각해보면, 작동 방식을 이해하기 어렵지
+    않을 것입니다.
+  \colsplit
+    \begin{minted}[fontsize=\footnotesize]{cpp}
+      bool vis[1005];
+      vector<int> edges[1005];
+      void bfs(int start)
+      {
+          queue<int> q;
+          vis[start] = 1;
+          q.push(start);
+          while (!q.empty())
+          {
+              int cur = q.front();
+              cout << cur << ' ';
+              q.pop();
+              for (int &nxt : edges[cur])
+              {
+                  if (vis[nxt]) continue;
+                  vis[nxt] = true;
+                  q.push(nxt);
+              }
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{BFS}{<BFS>}
+  \begin{twocol}
+    \vspace{20mm}
+    \texttt{queue}에 시작 정점을 넣어줍니다.\par\vspace{2mm}
+    그 후 \texttt{queue}가 빌 때까지 다음 슬라이드에서 설명할 과정을 반복합니다.
+  \colsplit
+    \begin{minted}[fontsize=\footnotesize]{cpp}
+      bool vis[1005];
+      vector<int> edges[1005];
+      void bfs(int start)
+      {
+          queue<int> q;
+          vis[start] = 1;
+          q.push(start);
+          while (!q.empty())
+          {
+              int cur = q.front();
+              cout << cur << ' ';
+              q.pop();
+              for (int &nxt : edges[cur])
+              {
+                  if (vis[nxt]) continue;
+                  vis[nxt] = true;
+                  q.push(nxt);
+              }
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{BFS}{<BFS>}
+  \begin{twocol}
+    \vspace{2mm}
+    Queue가 빌 때까지(모든 정점을 방문했을 때까지) 다음을 반복합니다.
+    \begin{enumerate}
+      \item \texttt{queue}의 맨 앞에 있는 정점을 현재 방문한 정점 \texttt{cur}에 저장하고
+        번호를 출력합니다.
+      \item \texttt{queue}의 맨 앞에 있는 정점을 \texttt{queue}에서 제거합니다.
+      \item \texttt{cur}과 연결된 정점들 중 아직 방문하지 않은 정점들을 \texttt{queue}에
+        넣어줍니다.
+    \end{enumerate}
+    \annot{queue가 비었다는 것은 더 이상 방문할 수 있는 정점이 없다는 뜻입니다.}
+  \colsplit
+    \begin{minted}[fontsize=\footnotesize]{cpp}
+      bool vis[1005];
+      vector<int> edges[1005];
+      void bfs(int start)
+      {
+          queue<int> q;
+          vis[start] = 1;
+          q.push(start);
+          while (!q.empty())
+          {
+              int cur = q.front();
+              cout << cur << ' ';
+              q.pop();
+              for (int &nxt : edges[cur])
+              {
+                  if (vis[nxt]) continue;
+                  vis[nxt] = true;
+                  q.push(nxt);
+              }
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{BFS}{<BFS>}
+  \vspace{8mm}
+  \concept{DFS와 BFS의 시간 복잡도 -- \complexity{V + E}}
+  \annot{(V = 정점의 개수, E = 간선의 개수)}
+  \vspace{6mm}
+  \begin{itemize}
+    \item 모든 정점을 한번씩 방문하기 때문에 $V$
+    \item 모든 정점에서 연결된 간선을 한번씩 체크하기 때문에 (방문 여부 체크 과정에서) $E$
+  \end{itemize}
+\end{frame}
+
+% --- 잡기놀이 문제 ---
+\begin{frame}{BFS}{<BFS>}
+  \begin{center}
+    \problemtitlegen{10}{잡기놀이}{JUNGOL \#3640}
+  \end{center}
+  \vspace{4mm}
+  \begin{columns}[T]
+    \column{0.60\textwidth}
+      \subhead{문제 설명}
+      \begin{itemize}
+        \item $X$에서 $X{-}1$, $X{+}1$, $2X$로 이동할 수 있을 때, $N$에서 $K$로
+          이동하는 최단 거리를 구하여라.
+      \end{itemize}
+    \column{0.38\textwidth}
+      \subhead{제약 조건}
+      \begin{itemize}
+        \item $1 \le N \le 100{,}000$
+        \item $1 \le K \le 100{,}000$
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{BFS}{<BFS>}
+  \begin{center}
+    \problemtitlegen{10}{잡기놀이}{JUNGOL \#3640}
+  \end{center}
+  \vspace{6mm}
+  \subhead{문제 해설}
+  \begin{itemize}
+    \item $X$에서 $X{-}1$, $X{+}1$, $2X$로 갈 수 있다는 정보를 \alert{간선}으로 생각합시다.
+    \item 이러한 그래프에서 $N$에서 $K$로의 최단 거리는 어떻게 구할 수 있을까요?
+    \item 가중치가 없는 그래프에서는, \hl{BFS를 통해 최단 거리를 구할 수 있습니다.}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{BFS}{<BFS>}
+  \begin{twocol}
+    \texttt{dist} 배열이 $-1$이라면 아직 방문하지 않음을, $-1$이 아니라면 시작점과의
+    거리를 나타냅니다.\par\vspace{2mm}
+    시작점인 $N$을 큐에 넣고 BFS를 시작합니다.\par\vspace{2mm}
+    현재 정점이 \texttt{now}고, 연결된 정점 $x$를 아직 방문하지 않았다면, $x$의 거리는
+    \texttt{now}의 거리보다 1 큽니다.\par\vspace{2mm}
+    \texttt{dist[x] = dist[now] + 1}처럼 \texttt{dist} 배열을 업데이트하여, 시작점으로부터의
+    거리를 저장합니다.
+  \colsplit
+    \begin{minted}[fontsize=\scriptsize]{cpp}
+      int N, K;
+      cin >> N >> K;
+      for (int i = 0; i <= max(N, K) + 1; i++) dist[i] = -1;
+      dist[N] = 0;
+      queue<int> q;
+      q.push(N);
+      while (!q.empty())
+      {
+          int now = q.front();
+          q.pop();
+          if (now * 2 <= K + 1 and dist[now * 2] == -1)
+          {
+              dist[now * 2] = dist[now] + 1;
+              q.push(now * 2);
+          }
+          if (now - 1 >= 0 and dist[now - 1] == -1)
+          {
+              dist[now - 1] = dist[now] + 1;
+              q.push(now - 1);
+          }
+          if (now + 1 <= K + 1 and dist[now + 1] == -1)
+          {
+              dist[now + 1] = dist[now] + 1;
+              q.push(now + 1);
+          }
+      }
+      cout << dist[K];
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{BFS}{<BFS>}
+  \begin{twocol}
+    도착 지점이 $K$이기 때문에, $K{+}1$보다 큰 위치로 갈 필요가 없습니다.\par\vspace{2mm}
+    \annot{증명) $K$보다 큰 위치로 간다면, $K$에 도달하기 위해서 언젠가는 왼쪽으로
+      이동해야 합니다. $\times 2$를 사용해 $K{+}2$ 이상으로 간 뒤 $-1$을 2번 이상 사용해
+      $K$를 가는 것보다, $-1$을 먼저 사용한 후 $K$로 가는 것이 더 빠르기 때문입니다.}
+    \par\vspace{2mm}
+    비슷하게, 0보다 작은 위치로 갈 필요도 없습니다.\par\vspace{2mm}
+    따라서 \texttt{now}의 범위를 확인하여 너무 많이 방문하지 않도록 효율성을 높여줄 수
+    있습니다.
+  \colsplit
+    \begin{minted}[fontsize=\scriptsize]{cpp}
+      int N, K;
+      cin >> N >> K;
+      for (int i = 0; i <= max(N, K) + 1; i++) dist[i] = -1;
+      dist[N] = 0;
+      queue<int> q;
+      q.push(N);
+      while (!q.empty())
+      {
+          int now = q.front();
+          q.pop();
+          if (now * 2 <= K + 1 and dist[now * 2] == -1)
+          {
+              dist[now * 2] = dist[now] + 1;
+              q.push(now * 2);
+          }
+          if (now - 1 >= 0 and dist[now - 1] == -1)
+          {
+              dist[now - 1] = dist[now] + 1;
+              q.push(now - 1);
+          }
+          if (now + 1 <= K + 1 and dist[now + 1] == -1)
+          {
+              dist[now + 1] = dist[now] + 1;
+              q.push(now + 1);
+          }
+      }
+      cout << dist[K];
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+% ==========================================================
+\alohasection{연습 문제}
+% ==========================================================
+
+\begin{frame}{필수문제}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \problemitemgen{10}{장기 2}{JUNGOL \#4189}{BFS는 최단 거리를 구할 때 쓸 수 있습니다.}
+      \problemitemgen{10}{안전 영역}{JUNGOL \#2298}{연결 요소의 개수 구하기}
+    \column{0.48\textwidth}
+      \problemitemgen{10}{잡기놀이}{JUNGOL \#3640}{강의에서 설명한 문제입니다.}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{연습 문제 도전}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \problemitemgen{10}{영역 구하기}{JUNGOL \#1457}{최단 거리를 구할 수 있으니 이 문제도 해결할 수 있습니다.}
+      \problemitemgen{10}{보물섬}{JUNGOL \#1462}{문제 조건에 주목합시다.}
+      \problemitemgen{10}{토마토(초)}{JUNGOL \#2606}{3차원 격자 그래프 위에서의 BFS 탐색}
+    \column{0.48\textwidth}
+      \problemitemgen{10}{저글링 방사능 오염}{JUNGOL \#1078}{BFS는 최단 거리를 구할 때 쓸 수 있습니다.}
+      \problemitemgen{10}{토마토(고)}{JUNGOL \#2613}{2차원 격자 그래프 위에서의 BFS 탐색}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{연습 문제 도전}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \problemitemgen{10}{화염에서 탈출}{JUNGOL \#1082}{Multi-Source BFS}
+    \column{0.48\textwidth}
+      \problemitemgen{10}{로봇}{JUNGOL \#1006}{`상태'란 무엇일까요?}
+  \end{columns}
+\end{frame}
+
+\closingframe
+
+\end{document}

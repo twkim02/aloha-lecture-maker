@@ -306,6 +306,18 @@
   \vspace{1.2mm}%
   {\hspace*{1.9em}\aloha@annotfont\color{aloha-gray}#4\par}}
 
+% 범용 문제 제목 (BOJ 외 출처: JUNGOL/Codeforces 등, 링크 없음)
+%   \problemtitlegen{난이도}{문제 이름}{출처 표기(예: JUNGOL \#3640)}
+\newcommand{\problemtitlegen}[3]{%
+  {\difficulty{#1}\hspace{0.45em}{\aloha@problemfont #2}\hspace{0.35em}%
+   {\aloha@problemidfont\color{aloha-gray}(#3)}}}
+%   \problemitemgen{난이도}{문제 이름}{출처 표기}{한 줄 설명}
+\newcommand{\problemitemgen}[4]{%
+  \par\vspace{3.5mm}%
+  {\problemtitlegen{#1}{#2}{#3}\par}%
+  \vspace{1.2mm}%
+  {\hspace*{1.9em}\aloha@annotfont\color{aloha-gray}#4\par}}
+
 % 시간복잡도 표기
 \newcommand{\complexity}[1]{$\mathcal{O}\left({#1}\right)$}
 
