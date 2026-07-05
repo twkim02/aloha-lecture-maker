@@ -1,6 +1,7 @@
 ## ALOHA 빌드 산출물 (레포 루트에 생성되는 컴파일 결과 PDF)
 /main.pdf
 /week01-complexity.pdf
+/week02-greedy.pdf
 
 ## Core latex/pdflatex auxiliary files:
 *.aux

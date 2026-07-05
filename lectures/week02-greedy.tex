@@ -1,0 +1,282 @@
+%!TEX program = xelatex
+% ==========================================================================
+%  2026-1 중급반 2주차: 그리디 알고리즘
+%  - 기존 PPT 강의자료를 ALOHA LaTeX 템플릿으로 포팅한 것입니다.
+%  - 컴파일: 레포 루트에서  latexmk lectures/week02-greedy.tex
+% ==========================================================================
+\input{header}
+
+\deckheader{2026 ALOHA 1학기 멘토링}
+\deckfooter{2026 ALOHA}
+\lecturetag{중급반 2주차}
+\title{그리디 알고리즘}
+\subtitle{Greedy Algorithm}
+
+% 예시 문제(2·5원 동전) 지문 — 여러 슬라이드에서 재사용
+% 동전 일러스트는 tikz 오버레이로 우상단에 고정(본문 흐름과 독립)
+\newcommand{\coinexample}{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[anchor=north east, inner sep=0pt] at ($(current page.north east)+(-14mm,-26mm)$)
+      {\includegraphics[width=44mm]{week02/coins.png}};
+  \end{tikzpicture}%
+  \subhead{예시 문제}
+  \begin{minipage}{0.60\textwidth}
+    2원짜리 동전과 5원짜리 동전만을 사용해서 거슬러주어야 할 돈 $n$원이 주어졌을 때
+    거슬러주어야 하는 동전의 \alert{최소 개수}를 구하여라.\\
+    (단, 각 동전들의 개수는 충분히 많다고 가정한다.)
+  \end{minipage}\par}
+
+\begin{document}
+
+\frame{\titlepage}
+
+% ==========================================================
+\alohasection{그리디 알고리즘}
+% ==========================================================
+
+\begin{frame}{그리디 알고리즘}{<Greedy Algorithm>}
+  \concept{%
+    \hl{미래를 고려하지 않고, 매 순간 최선의 선택을 쌓아가며}\\
+    결과적으로 최적의 답을 구해내는 알고리즘}
+  \vspace{4mm}
+  \annot{단, 현재의 선택이 미래의 최적해 가능성을 배제하는 경우 사용할 수 없어요}
+\end{frame}
+
+\begin{frame}{그리디 알고리즘}{<Greedy Algorithm> - 구현 방법}
+  \begin{enumerate}
+    \item 그리디하게 접근할 수 있는 문제인지 확인한다.
+    \begin{itemize}
+      \item[] \annot{그리디로 모든 문제를 풀 수 있는 건 아니에요. 문제를 부분 문제들로 나누어
+        풀어갈 수 있는 경우, 그리고 현재 단계에서의 최선의 선택이 전체의 최선의 선택으로
+        이어지는 경우에만 사용 가능해요.}
+    \end{itemize}
+    \item 이 문제의 매 단계마다 할 수 있는 최선의 선택을 찾고, 예외 케이스가 있는지 살핀다.
+    \begin{itemize}
+      \item[] \annot{현재의 선택이 다음 선택에 영향을 준다면 어떤 선택이 최선인지 알기 힘들어요.
+        당시에 최선으로 보이던 선택을 나중에 다시 바꾸어야 할 경우에는, 최선의 그리디한
+        전략이 아니에요.}
+    \end{itemize}
+    \item 정답에 도달할 때까지 2번을 반복한다.
+  \end{enumerate}
+\end{frame}
+
+% ==========================================================
+\alohasection{연습 문제}
+% ==========================================================
+
+\begin{frame}{그리디 알고리즘}{<Greedy Algorithm> - 연습 문제}
+  \begin{center}
+    \problemtitle{4}{거스름돈}{5585}
+  \end{center}
+  \vspace{4mm}
+  \begin{columns}[T]
+    \column{0.60\textwidth}
+      \subhead{문제 설명}
+      \begin{itemize}
+        \item 잔돈으로 쓰일 \alert{1, 5, 10, 50, 100, 500원짜리} 동전이 무한히 많이 있는 가게가 있다.
+        \item 물건 \alert{$n$원}어치를 사고, 1000원을 주었다.
+        \item 동전의 개수가 \alert{최소}가 되도록 거슬러 받는다.
+        \item \alert{동전이 몇 개 있을까?}
+      \end{itemize}
+    \column{0.38\textwidth}
+      \subhead{제약 조건}
+      \begin{itemize}
+        \item $1 \le n < 1{,}000$
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{그리디 알고리즘}{<Greedy Algorithm> - 연습 문제}
+  \begin{columns}[T]
+    \column{0.40\textwidth}
+      \vspace{2mm}
+      \problemtitle{4}{거스름돈}{5585}
+      \vspace{8mm}
+
+      \subhead{코드 설명}
+      \begin{itemize}
+        \item 가치가 큰 것부터 교환하면 될 거 같고, 실제로 그렇게 구현하면 됩니다.
+      \end{itemize}
+    \column{0.60\textwidth}
+      \begin{minted}{cpp}
+        int main(){
+            int cost;
+            cin >> cost;
+            int change = 1000 - cost;
+            int count = 0;
+            // 사용할 수 있는 동전 단위 (큰 순서대로)
+            int coins[6] = {500, 100, 50, 10, 5, 1};
+            // 매 단계에서 가장 가치가 높은 동전부터 '그리디하게' 선택
+            for (int i = 0; i < 6; i++) {
+                if (change == 0) break;   // 거스름돈을 다 줬다면 종료
+                // 현재 동전으로 줄 수 있는 최대 개수를 구함
+                count += (change / coins[i]);
+                // 남은 거스름돈 업데이트 (나머지 연산)
+                change %= coins[i];
+            }
+            cout << count << endl;   // 결과 출력
+        }
+      \end{minted}
+  \end{columns}
+\end{frame}
+
+% ==========================================================
+\alohasection{동작 원리}
+% ==========================================================
+
+\begin{frame}{그리디 알고리즘}{<Greedy Algorithm> - 동작 원리}
+  \coinexample
+\end{frame}
+
+\begin{frame}{그리디 알고리즘}{<Greedy Algorithm> - 동작 원리}
+  \coinexample
+  \vspace{2mm}
+  \subhead{풀이}
+  \begin{enumerate}
+    \item 직관적으로 생각했을 때, 5원짜리 동전을 많이 쓸수록 동전의 개수가 적어질 것이다.
+    \item \alert{그렇다면 가능한 한 적게 2원짜리 동전을 사용해보고, 5원짜리 동전을 최대한 많이 써 볼까?}
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{그리디 알고리즘}{<Greedy Algorithm> - 동작 원리}
+  \coinexample
+  \vspace{2mm}
+  \subhead{풀이}
+  \begin{enumerate}
+    \item 직관적으로 생각했을 때, 5원짜리 동전을 많이 쓸수록 동전의 개수가 적어질 것이다.
+    \item \alert{그렇다면 가능한 한 적게 2원짜리 동전을 사용해보고, 5원짜리 동전을 최대한 많이 써 볼까?}
+    \begin{itemize}
+      \item[$\to$] \alert{최선의 선택을 반복하여 정답을 도출할 수 있다!}
+      \item[] \annot{(`5원짜리 동전을 사용할 수 없으면 2원짜리 동전을 쓰고,
+        사용할 수 있으면 5원 동전으로 전부 처리한다.'를 반복)}
+    \end{itemize}
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{그리디 알고리즘}{<Greedy Algorithm> - 연습 문제}
+  \begin{center}
+    \problemtitle{6}{거스름돈}{14916}
+  \end{center}
+  \vspace{4mm}
+  \begin{columns}[T]
+    \column{0.60\textwidth}
+      \subhead{문제 설명}
+      \begin{itemize}
+        \item 거슬러주어야 할 돈 \alert{$n$원}이 주어진다.
+        \item \alert{2원짜리 동전과 5원짜리 동전}이 무한히 많이 주어진다.
+        \item 동전의 개수가 \alert{최소}가 되도록 거슬러 주어야 한다.
+        \item 동전을 거슬러 줄 수 없다면 $-1$을 출력한다.
+      \end{itemize}
+    \column{0.38\textwidth}
+      \subhead{제약 조건}
+      \begin{itemize}
+        \item $1 \le n \le 100{,}000$
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{그리디 알고리즘}{<Greedy Algorithm> - 연습 문제}
+  \begin{center}
+    \problemtitle{6}{거스름돈}{14916}
+  \end{center}
+  \vspace{6mm}
+  \subhead{문제 해설}
+  ``가능한 한 많은 5원짜리 동전을 사용하고, 가능한 한 적은 2원짜리 동전을 사용하자.''
+  \vspace{2mm}
+  \begin{itemize}
+    \item 만약 거스름돈이 15원이라면, $(15 / 5 = 3)$ 5원짜리 동전 3개를 사용하면
+      동전의 개수를 최소화할 수 있다.
+    \item 만약 거스름돈이 14원이라면, $(14 / 5 = 2)$ 5원짜리 동전 2개와 2원짜리 동전 2개를
+      사용하면 된다.
+    \item[] \vspace{1mm}
+    \item 그런데 만약, \alert{거스름돈이 1원이라면? 3원이라면?}
+  \end{itemize}
+\end{frame}
+
+% ==========================================================
+\alohasection{구현}
+% ==========================================================
+
+\begin{frame}{그리디 알고리즘}{<Greedy Algorithm> - 구현 방법}
+  \begin{enumerate}
+    \item 그리디하게 풀 수 있는 문제인지 확인한다.
+    \item 이 문제의 매 단계마다 할 수 있는 최선의 선택을 찾고, 예외 케이스가 있는지 살핀다.
+    \item 정답에 다다를 때까지 2번을 반복한다.
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{그리디 알고리즘}{<Greedy Algorithm> - 구현 코드}
+  \begin{columns}[T]
+    \column{0.40\textwidth}
+      \vspace{2mm}
+      \problemtitle{6}{거스름돈}{14916}
+      \vspace{8mm}
+
+      \begin{itemize}
+        \item \hl{예외 케이스는 따로!}
+        \item[] \vspace{1mm}
+        \item \hl{그리디 알고리즘은 앞에서부터 / 뒤에서부터 순차적으로!}
+      \end{itemize}
+    \column{0.60\textwidth}
+      \begin{minted}{cpp}
+        int main(){
+            int charge, answer = 0;
+            cin >> charge;
+            // 예외 처리
+            if(charge == 1 || charge == 3){
+                cout << -1 << '\n';
+            }
+            else{
+                // 5로 나누어 떨어질 때까지 2씩 빼주며 카운트
+                while(charge > 0){
+                    if(charge % 5 == 0){ // 5로 나누어 떨어질 때
+                        answer += charge / 5;
+                        break;
+                    }
+                    else{ // 5로 나누어 떨어지지 않을 때
+                        charge -= 2;
+                        answer++;
+                    }
+                }
+                cout << answer << '\n';
+            }
+        }
+      \end{minted}
+  \end{columns}
+\end{frame}
+
+% ==========================================================
+\alohasection{필수 문제}
+% ==========================================================
+
+\begin{frame}{필수 문제}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \problemitem{4}{거스름돈}{5585}{앞에서 설명한 문제 1}
+      \problemitem{7}{동전 0}{11047}{N종류의 동전으로 K원을 만드는 문제}
+    \column{0.48\textwidth}
+      \problemitem{6}{거스름돈}{14916}{앞에서 설명한 문제 2}
+      \problemitem{7}{설탕 배달}{2839}{동전의 종류가 `5원'과 `3원', 2종류일 땐 어떻게 될까요?}
+  \end{columns}
+\end{frame}
+
+% ==========================================================
+\alohasection{연습 문제 도전}
+% ==========================================================
+
+\begin{frame}{연습 문제 도전}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \problemitem{7}{ATM}{11399}{어떤 전략이 최선일까요? (Hint: 정렬)}
+      \problemitem{4}{$A_i \times A_j$}{32630}{수학적인 발상이 조금은 필요한 문제}
+      \problemitem{11}{회의실 배정}{1931}{진짜 정말 많이 유명한 문제}
+    \column{0.48\textwidth}
+      \problemitem{8}{주유소}{13305}{어떤 전략으로 기름을 넣어야 돈을 아낄 수 있을까요?}
+      \problemitem{4}{Pipelined}{30874}{2023 HCPC Beginner G번}
+      \problemitem{12}{잘 정의된 들여쓰기}{35309}{코딩테스트 스타일의 문제}
+  \end{columns}
+\end{frame}
+
+\closingframe
+
+\end{document}
