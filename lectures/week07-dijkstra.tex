@@ -1,0 +1,317 @@
+%!TEX program = xelatex
+% ==========================================================================
+%  2026-1 중급반 7주차: 최단 경로 (다익스트라 알고리즘)
+%  - 기존 PPT 강의자료를 ALOHA LaTeX 템플릿으로 포팅한 것입니다.
+%  - 컴파일: 레포 루트에서  latexmk lectures/week07-dijkstra.tex
+% ==========================================================================
+\input{header}
+
+\deckheader{2026 ALOHA 1학기 멘토링}
+\deckfooter{2026 ALOHA}
+\lecturetag{중급반 7주차}
+\title{최단 경로}
+\subtitle{Dijkstra's Algorithm}
+
+% 동작 원리 애니메이션 (그래프만 교체) — 공통 3단계 텍스트 + 중앙 그래프
+\newcommand{\dijgen}[1]{%
+  \begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 동작 원리}
+    \begin{enumerate}
+      \item 방문하지 않은 노드 중 거리가 가장 짧은 노드에 방문한다.
+      \item 방문한 노드와 인접한 노드의 거리를 갱신한다.
+      \item 선택한 노드를 방문한 노드로 처리한다.
+    \end{enumerate}
+    \vspace{2mm}
+    \begin{center}\includegraphics[height=48mm]{week07/#1}\end{center}
+  \end{frame}}
+
+% 동작 원리 + Priority Queue 테이블 애니메이션
+\newcommand{\dijpq}[2]{% #1=그래프 이미지, #2=PQ 표 본문(행)
+  \begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 동작 원리}
+    \begin{enumerate}
+      \item 방문하지 않은 노드 중 거리가 가장 짧은 노드에 방문한다.
+      \item 방문한 노드와 인접한 노드의 거리를 갱신한다.
+      \item 선택한 노드를 방문한 노드로 처리한다.
+    \end{enumerate}
+    \vspace{1mm}
+    \begin{columns}[c]
+      \column{0.60\textwidth}
+        \begin{center}\includegraphics[height=44mm]{week07/#1}\end{center}
+      \column{0.38\textwidth}
+        {\aloharegular <Priority Queue>\par}\vspace{1.5mm}
+        \small
+        \setlength{\arrayrulewidth}{0.3pt}\renewcommand{\arraystretch}{1.3}
+        \begin{tabular}{|c|c|c|}
+          \hline
+          \rowcolor{aloha-highlight} From & To & Distance \\ \hline
+          #2
+        \end{tabular}
+    \end{columns}
+  \end{frame}}
+
+\begin{document}
+
+\frame{\titlepage}
+
+% ==========================================================
+\alohasection{최단 경로}
+% ==========================================================
+
+\begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm>}
+  \vspace{6mm}
+  \concept{정해진 하나의 시작 정점에서부터 다른 모든 정점으로 가는\\ 최단 경로를 구하는 알고리즘}
+  \vspace{8mm}
+  \annot{음수 가중치 간선이 존재할 경우 사용할 수 없어요.\\
+    시간 복잡도는 \complexity{E \log V} / (E = Edge, V = Vertex)}
+\end{frame}
+
+% ==========================================================
+\alohasection{동작 원리}
+% ==========================================================
+
+\begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 동작 원리}
+  \vspace{8mm}
+  \begin{enumerate}
+    \item 시작 노드로부터 다른 노드 사이의 최단 거리를 모두 INF로 설정한다.
+    \item 방문하지 않은 노드 중 시작 노드와의 거리가 가장 짧은 노드에 방문한다.
+    \item 방문한 노드와 인접한 노드의 최단 거리를 갱신한다.
+    \item 모든 노드에 방문할 때까지 2\textasciitilde3을 반복한다.
+  \end{enumerate}
+\end{frame}
+
+% --- 그래프 애니메이션 (슬라이드 4~10) ---
+\begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 동작 원리}
+  \begin{enumerate}
+    \item 출발 정점 A에서 출발 정점 A까지의 거리를 0으로 확정한다.
+  \end{enumerate}
+  \vspace{2mm}
+  \begin{center}\includegraphics[height=48mm]{week07/dij1.png}\end{center}
+\end{frame}
+
+\begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 동작 원리}
+  \begin{enumerate}
+    \item 방문하지 않은 노드 중 거리가 가장 짧은 노드인 A에 방문한다.
+    \item A와 인접한 노드의 거리를 갱신한다.
+    \item A를 방문한 노드로 처리한다.
+  \end{enumerate}
+  \vspace{2mm}
+  \begin{center}\includegraphics[height=48mm]{week07/dij2.png}\end{center}
+\end{frame}
+
+\dijgen{dij3.png}
+\dijgen{dij4.png}
+\dijgen{dij5.png}
+\dijgen{dij6.png}
+\dijgen{dij7.png}
+
+\begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 동작 원리}
+  \vspace{8mm}
+  \begin{enumerate}
+    \item 시작 노드로부터 다른 노드 사이의 최단 거리를 모두 INF로 설정한다.
+    \item 방문하지 않은 노드 중 시작 노드와의 거리가 가장 짧은 노드에 방문한다.
+    \item 방문한 노드와 인접한 노드의 최단 거리를 갱신한다.
+    \item 모든 노드에 방문할 때까지 2\textasciitilde3을 반복한다.
+  \end{enumerate}
+  \vspace{4mm}
+  \hl{가장 짧은 노드를 빠르게 찾기 위해, `우선순위 큐' 자료구조를 사용합니다.}
+\end{frame}
+
+\begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 동작 원리}
+  \vspace{10mm}
+  BFS가 정점 간의 최단거리를 구할 때 사용된다는 것이 기억나시나요?\par\vspace{3mm}
+  다익스트라 알고리즘은 쉽게 생각하면 \hl{BFS에서 큐 대신 우선순위 큐를 사용해 Greedy하게}
+  간선의 가중치(거리)를 처리함으로써 효율적으로 최단경로를 확정하는 알고리즘입니다.
+\end{frame}
+
+% --- 그래프 + PQ 테이블 애니메이션 (슬라이드 13~19) ---
+\dijpq{dij1.png}{%
+  \rowcolor{aloha-highlight!45} A & A & 0 \\ \hline
+   &  &  \\ \hline
+   &  &  \\ \hline}
+\dijpq{dij2.png}{%
+  A & B & 2 \\ \hline
+  A & D & 3 \\ \hline
+   &  &  \\ \hline}
+\dijpq{dij3.png}{%
+  {\color{aloha-accent}B} & {\color{aloha-accent}E} & {\color{aloha-accent}3} \\ \hline
+  A & D & 3 \\ \hline
+  B & C & 7 \\ \hline}
+\dijpq{dij4.png}{%
+  A & D & 3 \\ \hline
+  B & C & 7 \\ \hline
+  E & F & 9 \\ \hline}
+\dijpq{dij5.png}{%
+  B & C & 7 \\ \hline
+  E & F & 9 \\ \hline
+   &  &  \\ \hline}
+\dijpq{dij6.png}{%
+  E & F & 9 \\ \hline
+   &  &  \\ \hline
+   &  &  \\ \hline}
+\dijpq{dij7.png}{%
+   &  &  \\ \hline
+   &  &  \\ \hline
+   &  &  \\ \hline}
+
+% ==========================================================
+\alohasection{구현 방법}
+% ==========================================================
+
+\begin{frame}[fragile]{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 구현 코드}
+  \begin{twocol}
+    \begin{enumerate}
+      \item 시작 노드로부터 다른 노드 사이의 최단 거리를 모두 INF로 설정한다.
+      \item 모든 노드에 방문할 때까지 다음을 반복한다.
+      \begin{enumerate}
+        \item 방문하지 않은 노드 중 시작 노드와의 거리가 가장 짧은 노드에 방문한다.
+        \item 방문한 노드와 인접한 노드의 최단 거리를 갱신한다.
+        \item 선택한 노드를 방문 완료 상태로 바꾼다.
+      \end{enumerate}
+    \end{enumerate}
+  \colsplit
+    \begin{minted}[fontsize=\scriptsize]{cpp}
+      // vector<int> dist(V+1, INF), K: 시작 정점 번호
+      void dijkstra(vector<vector<pair<int,int>>>& G,
+                    vector<int>& dist, int K) {
+          priority_queue<pair<int, int>> PQ;
+          PQ.push({0, K});
+          dist[K] = 0;
+          while(!PQ.empty()){
+              int cost = -PQ.top().first;
+              int curr = PQ.top().second;
+              PQ.pop();
+              for(int i=0; i < G[curr].size(); i++){
+                  int next = G[curr][i].first;
+                  int weight = G[curr][i].second;
+                  if(dist[next] > cost + weight){
+                      dist[next] = cost + weight;
+                      PQ.push({-dist[next], next});
+                  }
+              }
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 정당성 증명}
+  \vspace{6mm}
+  \begin{itemize}
+    \item 다익스트라 알고리즘은 항상 가장 가까운 정점을 먼저 처리하므로, 이미 처리된
+      정점까지의 거리는 최단거리임이 보장됩니다.
+    \item 간선의 가중치가 모두 0 이상이기 때문에, 나중에 더 짧은 경로가 생길 수 없기
+      때문입니다.
+    \item[] \vspace{1mm}
+    \item 따라서 매번 가장 짧은 경로를 확정하며 나아가는 방식이 \hl{전체 그래프에 대해
+      올바른 최단거리를 보장}합니다.
+  \end{itemize}
+\end{frame}
+
+% ==========================================================
+\alohasection{연습 문제}
+% ==========================================================
+
+\begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 연습 문제}
+  \begin{center}
+    \problemtitlegen{13}{최단경로}{JUNGOL \#1941}
+  \end{center}
+  \vspace{4mm}
+  \begin{columns}[T]
+    \column{0.60\textwidth}
+      \subhead{문제 설명}
+      \begin{itemize}
+        \item 정점 $N$개와 간선 $M$개로 이루어진 그래프가 주어진다.
+        \item 각 간선에는 가중치가 존재한다.
+        \item 1번 정점에서 $N$번 정점까지의 최단거리를 구하기
+      \end{itemize}
+    \column{0.38\textwidth}
+      \subhead{제약 조건}
+      \begin{itemize}
+        \item $1 \le N \le 20{,}000$
+        \item $1 \le M \le 300{,}000$
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 연습 문제}
+  \begin{center}
+    \problemtitlegen{13}{최단경로}{JUNGOL \#1941}
+  \end{center}
+  \vspace{8mm}
+  \subhead{문제 해설}
+  \begin{itemize}
+    \item 다익스트라 알고리즘을 그대로 적용하는 문제
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 연습 문제}
+  \begin{center}
+    \problemtitlegen{13}{지하철}{JUNGOL \#2097}
+  \end{center}
+  \vspace{4mm}
+  \begin{columns}[T]
+    \column{0.60\textwidth}
+      \subhead{문제 설명}
+      \begin{itemize}
+        \item 정점 $N$개와 간선 $N^2$개로 이루어진 그래프가 주어진다.
+        \item 각 간선에는 가중치가 존재한다.
+        \item 1번 정점에서 $M$번 정점으로 가는 최단 경로 구하기
+        \item 최소 비용 뿐 아니라 \alert{경로도 출력}해야 한다.
+      \end{itemize}
+    \column{0.38\textwidth}
+      \subhead{제약 조건}
+      \begin{itemize}
+        \item $1 \le N \le 1{,}000$
+      \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{다익스트라 알고리즘}{<Dijkstra's Algorithm> - 연습 문제}
+  \begin{center}
+    \problemtitlegen{13}{지하철}{JUNGOL \#2097}
+  \end{center}
+  \subhead{문제 해설}
+  \begin{itemize}
+    \item 정점 $k$의 최단 거리를 갱신할 때, $k$로 가기 이전의 노드를 \texttt{prev[]}
+      배열에 저장해 둡니다.
+    \item $M$번 정점에서 시작해서 1번 정점이 나올 때까지 \texttt{prev[]} 배열을
+      따라가주면 됩니다.
+  \end{itemize}
+  \vspace{2mm}
+  \begin{center}
+    \begin{minted}[fontsize=\footnotesize]{cpp}
+      for(int i=0; i < G[curr].size(); i++){
+          int next = G[curr][i].first;
+          int weight = G[curr][i].second;
+          if(dist[next] > cost + weight){
+              dist[next] = cost + weight;
+              PQ.push({-dist[next], next});
+              prev[next] = curr;
+          }
+      }
+    \end{minted}
+  \end{center}
+\end{frame}
+
+\begin{frame}{필수 문제}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \problemitemgen{13}{최단경로}{JUNGOL \#1941}{다익스트라 알고리즘 익히기}
+    \column{0.48\textwidth}
+      \problemitemgen{13}{지하철}{JUNGOL \#2097}{다익스트라 알고리즘으로 경로 구하기}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{연습 문제 도전}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \problemitemgen{13}{페이지 전환}{JUNGOL \#1108}{다익스트라 여러 번 돌리기}
+      \problemitemgen{14}{소는 왜 길을 건너갔을까? 7}{JUNGOL \#4013}{`상태'를 그래프에 녹여내는 방법}
+    \column{0.48\textwidth}
+      \problemitemgen{14}{꿀꿀이 축제}{JUNGOL \#2109}{각 정점에서 X번 정점까지 갈 때, 각각의 거리를 구하기}
+      \problemitemgen{16}{주유소(고등)}{JUNGOL \#2999}{이전에 방문한 노드의 기름값도 중요하다}
+  \end{columns}
+\end{frame}
+
+\closingframe
+
+\end{document}
