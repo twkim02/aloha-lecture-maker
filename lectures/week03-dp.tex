@@ -1,0 +1,496 @@
+%!TEX program = xelatex
+% ==========================================================================
+%  2026-1 중급반 3주차: 동적 계획법 (Dynamic Programming)
+%  - 기존 PPT 강의자료를 ALOHA LaTeX 템플릿으로 포팅한 것입니다.
+%  - 컴파일: 레포 루트에서  latexmk lectures/week03-dp.tex
+% ==========================================================================
+\input{header}
+
+\deckheader{2026 ALOHA 1학기 멘토링}
+\deckfooter{2026 ALOHA}
+\lecturetag{중급반 3주차}
+\title{동적 계획법}
+\subtitle{Dynamic Programming}
+
+\begin{document}
+
+% 이 강의(원본)는 타이틀에 목차가 없는 연속 서사형이라 \alohasection을 쓰지 않습니다.
+\frame{\titlepage}
+
+% ---------------------------------------------------------- 재귀 / 개념
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \vspace{4mm}
+  동적 계획법(Dynamic Programming, DP)은 문제의 \alert{재귀적인 구조}를 찾아
+  작은 문제의 답으로 큰 문제의 답을 구하는 문제해결 방식입니다.\par\vspace{2mm}
+  특정한 알고리즘이 아니라 사고의 패러다임 중 하나이기 때문에
+  DP를 이해하려면 사례를 통해 문제를 재귀적으로 쪼개는 법을 익혀야 합니다.\par\vspace{2mm}
+  재귀에 대해 간단하게 한번 알아봅시다.
+\end{frame}
+
+\begin{frame}[fragile]{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    재귀적 사고에 익숙해지기 위해 재귀함수에 대해 간단히 살펴봅시다.\par\vspace{1mm}
+    오른쪽 코드는 $N$부터 1까지 순서대로 출력하는 함수입니다.\par\vspace{1mm}
+    \texttt{f(5)}가 호출되면 5를 출력한 뒤 \texttt{f(4)}를 호출합니다.
+    \texttt{f(4)}가 호출되면 4를 출력한 뒤 \texttt{f(3)}을 호출합니다. $\cdots$\par\vspace{1mm}
+    \texttt{f(1)}이 호출되면 1을 출력한 뒤 \texttt{f(0)}을 호출하고,
+    \texttt{f(0)}이 호출되면 아무것도 하지 않고 종료합니다.\par\vspace{1mm}
+    이후 호출 순서대로 \texttt{f(1)}, \texttt{f(2)}, $\cdots$, \texttt{f(5)}가 차례대로 종료됩니다.
+    따라서 5, 4, 3, 2, 1이 순서대로 출력됩니다.
+  \colsplit
+    \begin{minted}{cpp}
+      #include <iostream>
+      using namespace std;
+      void f(int N){
+          if (N == 0)
+              return;
+          cout << N << '\n';
+          f(N-1);
+      }
+      int main(){
+          f(5);
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    오른쪽 코드는 1부터 $N$까지 출력하는, 이전 슬라이드의 코드와 반대로 동작하는 코드입니다.\par\vspace{1mm}
+    \texttt{f(5)}를 호출하면 \texttt{f(4)}를 호출합니다. 이후 재귀적으로
+    \texttt{f(3)}, \texttt{f(2)}, \texttt{f(1)}, \texttt{f(0)}이 호출됩니다.\par\vspace{1mm}
+    \texttt{f(0)}이 종료되면 \texttt{f(1)}으로 돌아와 1을 출력하고, \texttt{f(1)}이 종료됩니다.
+    이후 \texttt{f(2)}로 돌아와 2를 출력하고 \texttt{f(2)}도 종료됩니다.\par\vspace{1mm}
+    이 과정이 반복되어 \texttt{f(5)}까지 종료되면 1, 2, 3, 4, 5가 순서대로 출력됩니다.
+  \colsplit
+    \begin{minted}{cpp}
+      #include <iostream>
+      using namespace std;
+      void f(int N){
+          if (N == 0)
+              return;
+          f(N-1);
+          cout << N << '\n';
+      }
+      int main(){
+          f(5);
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    일반적으로 재귀 함수는 해결하고자 하는 문제를 재귀적으로 쪼개어 설계합니다.\par\vspace{1mm}
+    예를 들어, \alert{1부터 $N$까지 출력하기}는 1부터 $N-1$까지 출력한 뒤 $N$ 출력하기로
+    생각할 수 있습니다.\par\vspace{1mm}
+    마찬가지로, \alert{$N$부터 1까지 출력하기}는 $N$ 출력한 뒤 $N-1$부터 1까지 출력하기로
+    생각할 수 있습니다.\par\vspace{1mm}
+    이를 바탕으로 오른쪽처럼 재귀 함수를 설계할 수 있습니다.
+  \colsplit
+    \begin{minted}{cpp}
+      void print_1_to_N(int N){
+          if (N == 0)
+              return;
+          print_1_to_N(N-1);
+          cout << N << '\n';
+      }
+      void print_N_to_1(int N){
+          if (N == 0)
+              return;
+          cout << N << '\n';
+          print_N_to_1(N-1);
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    \alert{재귀적인 구조}는 전체 문제를 풀기 위한 \hl{부분 문제가 전체 문제와 같은 구조}임을
+    의미합니다.\par\vspace{2mm}
+    예를 들어, 피보나치 수의 계산을 생각해 봅시다.
+    \texttt{fib(6)}은 이전 두 항인 \texttt{fib(5)}와 \texttt{fib(4)}의 값을 더하여 구합니다.
+    이때, \texttt{fib(5)}와 \texttt{fib(4)}의 값 또한 이전 두 항을 더하는 방식으로 계산됩니다.\par\vspace{2mm}
+    재귀적인 구조는 보통 점화식으로 나타낼 수 있기 때문에, 처음 배우는 단계에서는
+    동적 계획법으로 문제를 푸는 과정을 문제에 대한 점화식을 찾는다고 생각해도 됩니다.
+  \colsplit
+    \includegraphics[width=\linewidth]{week03/fib-tree.png}
+    \vspace{6mm}
+    \[ fib(n) = \begin{cases}
+        0 & (n=0) \\
+        1 & (n=1) \\
+        fib(n{-}1)+fib(n{-}2) & (otherwise)
+      \end{cases} \]
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    동적 계획법으로 문제를 푸는 과정은
+    \begin{enumerate}
+      \item \hl{문제를 재귀적인 관계로 나타내기}
+      \item \hl{점화식 계산}
+    \end{enumerate}
+    두 단계로 나눌 수 있습니다.\par\vspace{2mm}
+    점화식 계산은 보통 기계적으로 수행할 수 있으니, 문제를 풀어 보며 재귀적인 관계를
+    세우는 연습을 먼저 한 뒤 점화식 계산하는 법을 배우겠습니다.
+  \colsplit
+    \problemtitle{8}{1, 2, 3 더하기}{9095}
+    \vspace{6mm}
+
+    \subhead{문제 설명}
+    \begin{itemize}
+      \item 정수 $N\,(N < 11)$이 주어질 때, 1, 2, 3으로만 이루어져 있고 합이 $N$인
+        수열을 만드는 경우의 수 구하기
+      \item 순서가 다르면 다른 경우\\
+        ex) $1 + 2$와 $2 + 1$은 다른 경우
+    \end{itemize}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    $N = 4$일 때의 답을 살펴봅시다. 오른쪽처럼 7가지가 있습니다.\par\vspace{2mm}
+    순서가 다르면 다른 경우이니, \alert{첫 번째 수를 기준으로} 경우를 나누어 봅시다.
+    첫 번째 수가 1인 경우는 4가지, 2인 경우는 2가지, 3인 경우는 1가지입니다.\par\vspace{2mm}
+    첫 번째 수가 1일 때를 봅시다. 첫 번째 수를 1로 고정하면 나머지 수들의 합은 3이 되어야 합니다.
+    따라서, 첫 번째 수가 1인 경우의 수는 \hl{1, 2, 3으로 3을 만드는 경우의 수}와 같습니다.
+  \colsplit
+    \vspace{4mm}
+    \begin{center}\ttfamily
+      \alert{1} + 1 + 1 + 1\\[1mm]
+      \alert{1} + 1 + 2\\[1mm]
+      \alert{1} + 2 + 1\\[1mm]
+      \alert{1} + 3\\[1mm]
+      2 + 1 + 1\\[1mm]
+      2 + 2\\[1mm]
+      3 + 1
+    \end{center}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    같은 논리로, 첫 번째 수가 2인 경우는 2를 만드는 경우의 수와, 3인 경우는 1을 만드는
+    경우의 수와 같습니다. 세 가지 경우의 수를 모두 합치면 4를 만드는 전체 경우의 수가 됩니다.\par\vspace{2mm}
+    $N$을 만드는 경우의 수를 $f(N)$이라고 표현하면, $f(4) = f(3) + f(2) + f(1)$과 같습니다.
+    같은 논리로, $f(5) = f(4) + f(3) + f(2)$입니다.\par\vspace{2mm}
+    일반화하면, \hl{$f(N) = f(N{-}1) + f(N{-}2) + f(N{-}3)$}이라는 점화식을 얻게 됩니다.
+  \colsplit
+    \vspace{4mm}
+    \begin{center}\ttfamily
+      1 + 1 + 1 + 1\\[1mm]
+      1 + 1 + 2\\[1mm]
+      1 + 2 + 1\\[1mm]
+      1 + 3\\[1mm]
+      2 + 1 + 1\\[1mm]
+      2 + 2\\[1mm]
+      3 + 1
+    \end{center}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    동적 계획법은 작은 문제의 답으로 큰 문제의 답을 구하는 방식이라고 했습니다.\par\vspace{2mm}
+    어떤 문제 A를 풀기 위해 B의 답이 필요할 때 B를 작은 문제, A를 큰 문제라고 생각합니다.
+    즉, \alert{문제의 크기}는 \hl{문제 사이의 종속성}에 따라 정의됩니다.\par\vspace{2mm}
+    예를 들어, 앞서 살펴본 점화식 $f(N) = f(N{-}1) + f(N{-}2) + f(N{-}3)$에서 $f(N)$을
+    큰 문제, 나머지를 작은 문제로 봅니다.
+  \colsplit
+    \vspace{4mm}
+    \includegraphics[width=\linewidth]{week03/dp-size-slide.png}
+  \end{twocol}
+\end{frame}
+
+% ---------------------------------------------------------- Top-down / Bottom-up
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \vspace{6mm}
+  점화식을 계산하는 방식은 크게 \alert{Top-down 방식}과 \alert{Bottom-up 방식}으로 나뉩니다.
+  \vspace{4mm}
+  \begin{itemize}
+    \item \textbf{Bottom-up} 방식은 반복문을 통해 작은 문제부터 큰 문제 순서로
+      답을 구해가는 방식이며,
+    \item \textbf{Top-down} 방식은 재귀 함수를 통해 큰 문제에서부터 작은 문제를
+      찾아가는 방식입니다.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    오른쪽 코드는 \alert{Bottom-up 방식}으로 문제를 푸는 코드입니다.\par\vspace{1mm}
+    1, 2, 3 더하기 문제의 점화식은 $f(N) = f(N{-}1) + f(N{-}2) + f(N{-}3)$ 이었습니다.
+    이 점화식은 $N \le 3$일 때는 적용할 수 없으니, $N \le 3$인 경우의 답은 미리 구해 두어야 합니다.\par\vspace{1mm}
+    이 문제에서는 $N$이 작을수록 작은 문제입니다. 따라서, $N$이 작은 경우부터 차례로 답을
+    계산하면 문제의 답을 구할 수 있습니다.\par\vspace{1mm}
+    $f(1), \cdots, f(N)$을 모두 구해두는 시간복잡도는 자명히 \complexity{N}입니다.
+  \colsplit
+    \begin{minted}{cpp}
+      #include <iostream>
+      using namespace std;
+      int dp[11];
+      int main(){
+          dp[1] = 1; dp[2] = 2; dp[3] = 4;
+          for (int i = 4; i <= 10; i++)
+              dp[i] = dp[i-1] + dp[i-2] + dp[i-3];
+          int t;
+          cin >> t;
+          for (int i = 0; i < t; i++){
+              int N;
+              cin >> N;
+              cout << dp[N] << '\n';
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    오른쪽 코드는 \alert{Top-down 방식}으로 문제를 푸는 코드입니다.\par\vspace{2mm}
+    Top-down 방식의 핵심은 계산 결과를 \texttt{dp} 배열에 저장하고, 이미 결과가 계산된
+    값은 다시 계산하지 않는 것입니다.\par\vspace{2mm}
+    이를 \hl{메모이제이션}이라고 합니다.
+  \colsplit
+    \begin{minted}{cpp}
+      #include <iostream>
+      using namespace std;
+      int dp[11];
+      int f(int N){
+          if (N == 1) return 1;
+          if (N == 2) return 2;
+          if (N == 3) return 4;
+          if (dp[N] != 0) return dp[N];
+          dp[N] = f(N-1) + f(N-2) + f(N-3);
+          return dp[N];
+      }
+      int main(){
+          int t;
+          cin >> t;
+          for (int i = 0; i < t; i++){
+              int N;
+              cin >> N;
+              cout << f(N) << '\n';
+          }
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    위 그림은 피보나치 수를 \alert{메모이제이션 없이 단순 재귀}로, 아래 그림은
+    \alert{메모이제이션을 수행}하여 구하는 방식입니다.\par\vspace{2mm}
+    메모이제이션을 수행하지 않으면 이미 계산한 값에 대해서도 계속 재귀 호출을 수행하므로,
+    필요 없는 계산이 너무 많아집니다. 이때의 시간 복잡도는 \complexity{2^N}입니다.
+  \colsplit
+    \vspace{1mm}
+    \includegraphics[height=68mm]{week03/memo-trees.png}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    메모이제이션을 수행하면, 한 번 계산한 값은 다시 계산하지 않으니 \texttt{dp} 배열을
+    채우는 시간만 고려하면 전체 시간복잡도가 됩니다.\par\vspace{2mm}
+    따라서 메모이제이션을 수행하면 Bottom-up 방식과 같은 \complexity{N} 시간복잡도를 가집니다.
+  \colsplit
+    \vspace{1mm}
+    \includegraphics[height=68mm]{week03/memo-trees.png}
+  \end{twocol}
+\end{frame}
+
+% ---------------------------------------------------------- 1로 만들기
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \vspace{6mm}
+  점화식이 조금 다르게 생긴 문제를 풀어봅시다.
+  \vspace{10mm}
+  \begin{center}
+    \problemtitle{8}{1로 만들기}{1463}
+  \end{center}
+  \vspace{6mm}
+  \subhead{문제 설명}
+  \begin{itemize}
+    \item 수를 3으로 나누거나, 2로 나누거나, 1 뺄 수 있음
+    \item 정수 $N\ (1 \le N \le 10^6)$을 1로 만들기 위해 필요한 연산 횟수의 최솟값 구하기
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \vspace{4mm}
+  예제를 살펴봅시다. 10을 1로 만들기 위해 몇 번의 연산이 필요할까요?\par\vspace{3mm}
+  얼핏 보면 매 순간마다 가능한 가장 작은 수로 만드는 전략이 성립할 것 같습니다.\par\vspace{3mm}
+  하지만 10을 2로 나누면 $10 - 5 - 4 - 2 - 1$ \alert{4번}의 연산이 필요한 반면,
+  $10 - 9 - 3 - 1$처럼 \alert{3번}의 연산으로도 가능합니다.\par\vspace{3mm}
+  따라서 이러한 전략은 성립하지 않습니다.
+\end{frame}
+
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \vspace{2mm}
+  $X$에서 연산을 한 번 수행하면 $X{-}1$, $X/2$, $X/3$ 중 하나가 됩니다.
+  따라서 $X{-}1$, $X/2$, $X/3$ 각각을 1로 만드는 최소 연산 횟수를 모두 안다면
+  $X$를 1로 만드는 횟수 또한 알 수 있습니다.\par\vspace{2mm}
+  $X = 10$일 때 1로 만드는 연산 횟수를 구해 봅시다. $X{-}1 = 9$, $X/2 = 5$입니다.
+  9는 2번, 5는 3번의 연산으로 1로 만들 수 있습니다. 따라서 10에서 $-1$ 연산을 수행하면
+  $2 + 1 = 3$번, $/2$ 연산을 수행하면 $3 + 1 = 4$번의 연산으로 1로 만들 수 있습니다.\par\vspace{2mm}
+  이때, $X{-}1$, $X/2$, $X/3$ 각각을 1로 만드는 횟수 또한 같은 방식으로 구할 수 있습니다.
+  이러한 재귀 관계를 점화식으로 표현해 봅시다.\par\vspace{2mm}
+  $X$를 1로 만드는 최소 연산 횟수를 $F(X)$라고 정의하면,
+  \hl{$F(X) = \min(F(X{-}1),\ F(X/2),\ F(X/3)) + 1$}으로 나타낼 수 있습니다.
+\end{frame}
+
+\begin{frame}[fragile]{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    \vspace{20mm}
+    \alert{Bottom-up 방식}으로 문제를 푸는 코드입니다.
+  \colsplit
+    \begin{minted}{cpp}
+      #include <iostream>
+      #include <algorithm>
+      using namespace std;
+      int dp[1000005], n;
+      int main(){
+          cin >> n;
+          dp[1] = 0;
+          for (int i = 2; i <= n; i++){
+              dp[i] = dp[i-1] + 1;
+              if (i % 2 == 0)
+                  dp[i] = min(dp[i], dp[i/2]+1);
+              if (i % 3 == 0)
+                  dp[i] = min(dp[i], dp[i/3]+1);
+          }
+          cout << dp[n];
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+\begin{frame}[fragile]{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    \vspace{20mm}
+    \alert{Top-down 방식}으로 문제를 푸는 코드입니다.
+  \colsplit
+    \begin{minted}{cpp}
+      #include <iostream>
+      #include <algorithm>
+      using namespace std;
+      int dp[1'000'005], N;
+      int f(int x){
+          if (x == 1) return 0;
+          if (dp[x]) return dp[x];
+          dp[x] = f(x-1) + 1;
+          if (x % 2 == 0)
+              dp[x] = min(dp[x], f(x/2) + 1);
+          if (x % 3 == 0)
+              dp[x] = min(dp[x], f(x/3) + 1);
+          return dp[x];
+      }
+      int main(){
+          cin >> N;
+          cout << f(N);
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+% ---------------------------------------------------------- 2*N 타일링
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \vspace{4mm}
+  문제를 재귀적으로 나누는 다른 예시를 살펴봅시다.
+  \vspace{8mm}
+  \begin{center}
+    \problemtitle{8}{2*N 타일링}{11726}
+  \end{center}
+  \vspace{4mm}
+  \subhead{문제 설명}
+  \begin{itemize}
+    \item $2 \times N$ 크기의 직사각형을 $1 \times 2$ 직사각형으로 꽉 채우는 경우의 수 구하기
+    \item 경우의 수를 10007로 나눈 나머지를 출력해야 함
+    \item $N \le 1000$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \vspace{6mm}
+  \begin{center}
+    \includegraphics[width=0.92\linewidth]{week03/tiling.png}
+  \end{center}
+\end{frame}
+
+\begin{frame}{동적 계획법}{<Dynamic Programming>}
+  \vspace{8mm}
+  1부터 4까지 답을 구해 보니 수상하게 피보나치 수열이 나옵니다..!\par\vspace{3mm}
+  실제로 $2 \times N$ 직사각형을 채우는 경우의 수를 $f(N)$이라고 하면,
+  점화식은 \hl{$f(N) = f(N{-}1) + f(N{-}2)$}입니다.\par\vspace{3mm}
+  간단하게 설명하면, 가장 왼쪽 칸을 세로 블록으로 채우는 경우의 수가 $f(N{-}1)$,
+  가로 블록으로 채우는 경우의 수가 $f(N{-}2)$이기 때문입니다.
+\end{frame}
+
+\begin{frame}[fragile]{동적 계획법}{<Dynamic Programming>}
+  \begin{twocol}
+    \alert{Top-down 방식}으로 문제를 푸는 코드입니다.\par\vspace{2mm}
+    문제에서 10007로 나눈 나머지를 출력하라는 이유는 답이 너무 커져 표현 가능한 범위를
+    넘기 때문입니다. 따라서 단순히 계산하고 출력할 때만 나머지를 취하면 이미 overflow가
+    난 상태이므로 틀리게 됩니다.\par\vspace{2mm}
+    $(a + b) \bmod m = ((a \bmod m) + (b \bmod m)) \bmod m$이므로,
+    계산 중간중간마다 $m$으로 나눈 나머지를 취해 주면 문제를 풀 수 있습니다.
+  \colsplit
+    \begin{minted}{cpp}
+      #include <iostream>
+      using namespace std;
+      int dp[1005];
+      int f(int n){
+          if (n == 1) return 1;
+          if (n == 2) return 2;
+          if (dp[n] != -1) return dp[n];
+          dp[n] = (f(n-1) + f(n-2)) % 10007;
+          return dp[n];
+      }
+      int main(){
+          int n;
+          cin >> n;
+          for (int i = 1; i <= n; i++) dp[i] = -1;
+          cout << f(n);
+      }
+    \end{minted}
+  \end{twocol}
+\end{frame}
+
+% ---------------------------------------------------------- 문제 리스트
+\begin{frame}{필수 문제}
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+      \problemitem{8}{1, 2, 3 더하기}{9095}{PPT에서 해설한 문제입니다.}
+    \column{0.32\textwidth}
+      \problemitem{8}{1로 만들기}{1463}{PPT에서 해설한 문제입니다.}
+    \column{0.32\textwidth}
+      \problemitem{8}{2*N 타일링}{11726}{PPT에서 해설한 문제입니다.}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{연습 문제}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \problemitem{8}{파도반 수열}{9461}{그림을 잘 보고 점화식을 세워 보세요.}
+      \problemitem{9}{이항 계수 2}{11051}{조합 역시 점화식으로 나타낼 수 있습니다.}
+      \problemitem{10}{RGB거리}{1149}{이항 계수 문제처럼 점화식에 두 개 이상의 변수가 들어갈 수도 있습니다.}
+    \column{0.48\textwidth}
+      \problemitem{8}{돌 게임 3}{9657}{턴제 게임은 DP로 나타낼 수 있습니다! 현재 상태에서 선공의 승리 여부를 DP로 나타내 보세요.}
+      \problemitem{9}{가장 긴 증가하는 부분 수열}{11053}{dp[i] = i번째 수를 마지막 수로 가질 때 최대 길이. 점화식을 어떻게 세워야 할까요?}
+      \problemitem{10}{포도주 시식}{2156}{0잔 / 1잔 / 2잔 마신 경우를 분리해서 생각해 봅시다.}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{연습 문제}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+      \problemitem{11}{동전 2}{2294}{파이팅..!}
+    \column{0.48\textwidth}
+      \problemitem{12}{동전 1}{2293}{메모리 제한이 작아 2차원 배열을 사용하면 `메모리 초과'를 받습니다. 어떻게 해야 1차원 배열만으로 해결할 수 있을까요?}
+  \end{columns}
+\end{frame}
+
+\closingframe
+
+\end{document}
