@@ -4,21 +4,96 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      target:
+        description: "빌드 대상: all(전체) | changed(변경분만) | 특정 경로(예: lectures/week03-dp.tex)"
+        default: changed
+
+# 같은 브랜치에서 연달아 push하면 이전 실행은 취소 (러너 시간 절약)
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  # ------------------------------------------------------------------
+  # 1) 어떤 .tex를 빌드할지 결정 (변경 감지)
+  #    - 공통 파일(테마/헤더/폰트/워크플로/latexmkrc) 변경 → 전체 빌드
+  #    - 그 외 → 변경된 main.tex / lectures/*.tex / images/weekNN 만 빌드
+  #    - 새 강의를 추가해도 이 파일은 수정 불필요 (lectures/*.tex 자동 탐색)
+  # ------------------------------------------------------------------
+  setup:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.decide.outputs.matrix }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # diff를 위해 전체 히스토리 필요
+
+      - id: decide
+        run: |
+          set -e
+          ALL=$(ls main.tex lectures/*.tex 2>/dev/null)
+
+          decide_base() {
+            case "${{ github.event_name }}" in
+              pull_request) echo "${{ github.event.pull_request.base.sha }}" ;;
+              *)            echo "${{ github.event.before }}" ;;
+            esac
+          }
+
+          # workflow_dispatch로 명시 지정한 경우
+          T='${{ github.event.inputs.target }}'
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "$T" ] && [ "$T" != "changed" ]; then
+            if [ "$T" = "all" ]; then BUILD="$ALL"; else BUILD="$T"; fi
+          else
+            BASE=$(decide_base)
+            if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+              # 첫 push / 새 브랜치 등 비교 불가 → 전체 빌드
+              BUILD="$ALL"
+            else
+              CHANGED=$(git diff --name-only "$BASE" HEAD)
+              echo "변경된 파일:"; echo "$CHANGED" | sed 's/^/  /'
+              if echo "$CHANGED" | grep -qE '^(header\.tex|beamerthemeAloha\.sty|\.latexmkrc|fonts/|images/aloha-|images/[0-9]+\.svg\.png|\.github/workflows/build\.yml)'; then
+                echo "→ 공통 파일 변경: 전체 빌드"
+                BUILD="$ALL"
+              else
+                BUILD=""
+                echo "$CHANGED" | grep -qx 'main.tex' && BUILD="$BUILD main.tex"
+                for f in lectures/*.tex; do
+                  echo "$CHANGED" | grep -qx "$f" && BUILD="$BUILD $f"
+                done
+                # images/weekNN/ 변경 → 대응하는 lectures/weekNN-*.tex
+                for d in $(echo "$CHANGED" | grep -oE '^images/week[0-9]+' | sort -u); do
+                  n=$(basename "$d")
+                  for f in lectures/$n-*.tex; do [ -e "$f" ] && BUILD="$BUILD $f"; done
+                done
+              fi
+            fi
+          fi
+
+          MATRIX=$(printf '%s\n' $BUILD | grep -v '^$' | sort -u | jq -R . | jq -cs .)
+          echo "빌드 대상: $MATRIX"
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+  # ------------------------------------------------------------------
+  # 2) 결정된 각 .tex를 병렬로 컴파일 (한 파일당 러너 1개)
+  # ------------------------------------------------------------------
+  build:
+    needs: setup
+    if: needs.setup.outputs.matrix != '[]' && needs.setup.outputs.matrix != ''
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        root: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Compile with XeLaTeX (+minted)
         uses: xu-cheng/latex-action@v3
         with:
-          root_file: |
-            main.tex
-            lectures/week01-complexity.tex
-            lectures/week02-greedy.tex
+          root_file: ${{ matrix.root }}
           latexmk_use_xelatex: true
           latexmk_shell_escape: true
           work_in_root_file_dir: false
@@ -28,12 +103,15 @@ jobs:
           # minted v3 (TeX Live 2024+)는 latexminted 파이썬 패키지가 필요
           pre_compile: pip3 install --break-system-packages latexminted pygments || true
 
-      - name: Upload PDFs
+      - name: Resolve PDF name
+        id: pdf
+        run: |
+          base=$(basename "${{ matrix.root }}" .tex)
+          echo "name=$base" >> "$GITHUB_OUTPUT"
+
+      - name: Upload PDF
         uses: actions/upload-artifact@v4
         with:
-          name: lecture-pdfs
-          path: |
-            main.pdf
-            week01-complexity.pdf
-            week02-greedy.pdf
+          name: pdf-${{ steps.pdf.outputs.name }}
+          path: ${{ steps.pdf.outputs.name }}.pdf
           if-no-files-found: error

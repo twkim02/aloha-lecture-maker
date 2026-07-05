@@ -21,8 +21,16 @@ ALOHA (The algorithm club) 강의자료용 LaTeX(Beamer) 템플릿입니다.
 
 ### GitHub Actions (권장)
 
-push하면 `.github/workflows/build.yml`이 자동으로 `main.tex`와 `lectures/*.tex`를
-컴파일하고, Actions 탭 → 해당 런 → Artifacts에서 PDF를 받을 수 있습니다.
+push하면 `.github/workflows/build.yml`이 **변경된 강의만** 컴파일하고,
+Actions 탭 → 해당 런 → Artifacts에서 PDF(`pdf-<파일명>`)를 받을 수 있습니다.
+
+빌드 대상 결정 규칙:
+- `lectures/weekNN-*.tex` 또는 `images/weekNN/`만 바꾸면 → **그 강의 1개만** 빌드
+- 공통 파일(`beamerthemeAloha.sty`, `header.tex`, `fonts/`, `.latexmkrc`, 공용 이미지)을
+  바꾸면 → **전체** 빌드 (테마 변경이 모든 강의에 반영되므로)
+- 여러 개가 잡히면 **병렬**로 컴파일하므로 소요 시간은 1개와 비슷합니다
+- 전체를 수동으로 다시 빌드하려면: Actions 탭 → Build lecture PDFs → **Run workflow** →
+  target에 `all` 입력 (특정 파일 경로를 넣으면 그 파일만)
 
 ### Overleaf
 
