@@ -8,11 +8,23 @@ ALOHA (The algorithm club) 강의자료용 LaTeX(Beamer) 템플릿입니다.
 | `beamerthemeAloha.sty` | ALOHA 테마 (색상/폰트/페이지 장식/컴포넌트) |
 | `header.tex` | 공통 프리앰블 (패키지, minted 설정) |
 | `main.tex` | **컴포넌트 쇼케이스 데모** — 새 강의는 이 파일을 복사해서 시작 |
-| `lectures/week01-complexity.tex` | 실제 강의 포팅 예시 (1주차: 시간 복잡도, 누적 합) |
+| `lectures/week01~07-*.tex` | 2026-1 중급반 1~7주차 전체 포팅 (아래 표 참조) |
 | `fonts/` | 마루부리(본문) + DM Mono(코드) + Noto Sans KR(코드 한글) |
 | `images/` | ALOHA 로고, solved.ac 난이도 아이콘(`0..30.svg.png`), 강의별 그림 |
 | `lecture-pdf/`, `lecture-pptx/` | 기존 PPT 강의자료 원본 (참고용) |
 | `reference/` | 이 레포의 뿌리인 [UCPC 2020 테마](https://github.com/ucpcc/2020-solutions-theme) 아카이브 (컴파일 대상 아님) |
+
+### 포팅된 강의 (`lectures/`)
+
+| 파일 | 주제 |
+|---|---|
+| `week01-complexity.tex` | 시간 복잡도 & 누적 합 |
+| `week02-greedy.tex` | 그리디 알고리즘 |
+| `week03-dp.tex` | 동적 계획법 (DP) |
+| `week04-graph-dfs.tex` | 그래프 이론 & DFS |
+| `week05-bfs.tex` | 너비 우선 탐색 (BFS) |
+| `week06-stl.tex` | STL 심화 (map, set, priority_queue) |
+| `week07-dijkstra.tex` | 최단 경로 (다익스트라) |
 
 ## 빌드 방법
 
@@ -101,6 +113,10 @@ latexmk lectures/week01-complexity.tex
 
 % 문제 리스트 항목 (필수/연습 문제 슬라이드)
 \problemitem{8}{구간 합 구하기 4}{11659}{1차원 누적합을 구현해보아요}
+
+% BOJ 외 출처(JUNGOL/Codeforces 등) — 링크 없이 출처 표기만 (난이도 숫자는 solved.ac 티어)
+\problemtitlegen{10}{잡기놀이}{JUNGOL \#3640}
+\problemitemgen{4}{Tutorial : STL Map 1}{JUNGOL \#8561}{std::map에 익숙해지기}
 
 % 2단 레이아웃 + 중앙 세로 구분선
 \begin{twocol}
